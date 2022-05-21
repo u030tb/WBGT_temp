@@ -1,5 +1,6 @@
 # (1) region_map
 # (2) exposure map by temp and WBGT
+# setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 source("R_code/1_prefectural_data.R")
 
 regional_division
@@ -78,6 +79,10 @@ summary_table_prefname <-
 pacman::p_load(sf)
 
 setwd("C:/Users/u030t/OneDrive/デスクトップ/R/flexdashboard/japan_ver83")
+
+# https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
+sf::sf_use_s2(FALSE)
+
 pref_map <-
   read_sf("japan_ver83.shp") %>%
   select(-P_NUM, -H_NUM) %>%
@@ -98,8 +103,11 @@ pref_map <-
                            # 本島から北
                            "久米島町")) %>%
   # 県ごとにまとめ
-  group_by(prefJap) %>%
-  summarize(geometry = sf::st_union(geometry))
+  group_by(prefJap) %>% 
+  summarize(geometry = geometry %>% st_union())
+
+
+
 setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 pref_map <- 
   pref_map %>% 
@@ -127,7 +135,7 @@ shift_okinawa <- function(data,
   return(sf::st_as_sf(data))
 }
 
-# original function for Okinawa lines
+# 沖縄のための区切り線を引くための自作関数
 layer_autoline_okinawa <-
   function(i){
     ggplot2::annotate(
@@ -308,7 +316,7 @@ bottom <-
 
 
 
-setwd("C:/Users/u030t/OneDrive/デスクトップrch proposal/temp_WBGT")
+setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 pdf("figure/Fig1_regional_classification.pdf",
     width=10,
     height=6)
