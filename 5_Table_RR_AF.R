@@ -1,6 +1,6 @@
 # Table_RR_AF
 
-# Ç±ÇÍÇ»ÇµÇ≈
+# „Åì„Çå„Å™„Åó„Åß
 
 
 # source("R_code/1_prefectural_data.R")
@@ -21,7 +21,7 @@ gt_region_RR_95th
 
 
 # -------------------------------------------------------------------------
-# TABLEî≈ prefecture-level attributable fraction ----------------------
+# TABLEÁâà prefecture-level attributable fraction ----------------------
 # -------------------------------------------------------------------------
 
 library(gt)
@@ -81,19 +81,18 @@ gt_pref_AF_90th <-
   tab_footnote(
     footnote = md("North and South Kyushu region"),
     locations = cells_row_groups(
-      groups=c("Kyushu_N","Kyushu_S")
+      groups=c("Kyushu(North)","Kyushu(South)")
     ))
 
 gt_pref_AF_90th
 
-# setwd("C:/Users/u030t/OneDrive/ÉfÉXÉNÉgÉbÉv/research proposal/temp_WBGT")
 # gtsave(gt_pref_AF_90th,
 #        "figure/Table_pref_AF_90th.pdf",
 #        zoom=0.7)
 
 
 # -------------------------------------------------------------------------
-# TABLEî≈ region-level attribution fraction ----------------------
+# TABLEÁâà region-level attribution fraction ----------------------
 # -------------------------------------------------------------------------
 
 library(gt)
@@ -148,13 +147,12 @@ gt_region_AF_90th <-
   tab_footnote(
     footnote = md("North and South Kyushu region"),
     locations = cells_stub(
-      rows=c("Kyushu_N","Kyushu_S")
+      rows=c("Kyushu(North)","Kyushu(South)")
     ))
 
 gt_region_AF_90th
 
 
-# setwd("C:/Users/u030t/OneDrive/ÉfÉXÉNÉgÉbÉv/research proposal/temp_WBGT")
 # gtsave(gt_region_AF_90th,
 #        "figure/Table_region_AF_90th.pdf",
 #        zoom=0.7)
@@ -162,7 +160,7 @@ gt_region_AF_90th
 
 
 # -------------------------------------------------------------------------
-# TABLEî≈ prefecture-level attributable fraction ----------------------
+# TABLEÁâà prefecture-level attributable fraction ----------------------
 # -------------------------------------------------------------------------
 
 library(gt)
@@ -222,12 +220,11 @@ gt_pref_AF_95th <-
   tab_footnote(
     footnote = md("North and South Kyushu region"),
     locations = cells_row_groups(
-      groups=c("Kyushu_N","Kyushu_S")
+      groups=c("Kyushu(North)","Kyushu(South)")
     ))
 
 gt_pref_AF_95th
 
-# setwd("C:/Users/u030t/OneDrive/ÉfÉXÉNÉgÉbÉv/research proposal/temp_WBGT")
 # gtsave(gt_pref_AF_95th,
 #        "figure/Table_pref_AF_95th.pdf",
 #        zoom=0.7)
@@ -235,7 +232,7 @@ gt_pref_AF_95th
 
 
 # -------------------------------------------------------------------------
-# TABLEî≈ region-level attribution fraction ----------------------
+# TABLEÁâà region-level attribution fraction ----------------------
 # -------------------------------------------------------------------------
 
 library(gt)
@@ -290,12 +287,11 @@ gt_region_AF_95th <-
   tab_footnote(
     footnote = md("North and South Kyushu region"),
     locations = cells_stub(
-      rows=c("Kyushu_N","Kyushu_S")
+      rows=c("Kyushu(North)","Kyushu(South)")
     ))
 
 gt_region_AF_95th
 
-# setwd("C:/Users/u030t/OneDrive/ÉfÉXÉNÉgÉbÉv/research proposal/temp_WBGT")
 # gtsave(gt_region_AF_95th,
 #        "figure/Table_region_AF_95th.pdf",
 #        zoom=0.7)
@@ -381,7 +377,7 @@ gt_pref_RR <-
 gt_pref_RR[[1]]
 gt_pref_RR[[3]]
 
-# setwd("C:/Users/u030t/OneDrive/ÉfÉXÉNÉgÉbÉv/research proposal/temp_WBGT")
+# setwd("C:/Users/u030t/OneDrive/„Éá„Çπ„ÇØ„Éà„ÉÉ„Éó/research proposal/temp_WBGT")
 # gtsave(gt_pref_RR[[1]],
 #        "figure/Table_pref_RR_90th.pdf",
 #        zoom=0.7)
@@ -456,13 +452,10 @@ gt_region_RR <-
 gt_region_RR[[1]]
 gt_region_RR[[4]]
 
-# setwd("C:/Users/u030t/OneDrive/ÉfÉXÉNÉgÉbÉv/research proposal/temp_WBGT")
+# setwd("C:/Users/u030t/OneDrive/„Éá„Çπ„ÇØ„Éà„ÉÉ„Éó/research proposal/temp_WBGT")
 # gtsave(gt_region_RR[[1]],
 #        "figure/Table_region_RR_90th.pdf",
 #        zoom=0.7)
 # gtsave(gt_region_RR[[3]],
 #        "figure/Table_region_RR_95th.pdf",
 #        zoom=0.7)
-
-
-

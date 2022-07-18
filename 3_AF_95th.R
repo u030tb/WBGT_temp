@@ -2,7 +2,7 @@
 # source("R_code/1_prefectural_data.R")
 # source("R_code/2_prefectural_BLUP.R")
 
-# ???Ê•?
+# ???Ê??
 regional_division
 pref_list
 metapredictor_table %>% head(2)
@@ -45,14 +45,14 @@ pref_temp_AF_95th <-
   select(data,MMT,bvar_temp,nationwide_temp_BLUP) %>% 
   pmap(function(data,MMT,bvar_temp,nationwide_temp_BLUP){
     
-    # ?Ï??Ç‰? --------------------------------------------------------------------
+    # ?Ï???Ç?? --------------------------------------------------------------------
     p_data <- 
       data %>% 
       mutate(over_95th = data$tmax >= quantile(data$tmax,cutoff_per))
     
-    # basis?ì¬ -----------------------------------------------------------------
-    # ?ß‹??ì¬crosspred?Íƒp?[?Z???g???Æ‚?basis???????Á‚Ä‚È‚??B
-    # ?????Å??n???f?[?^?É‘Î‚??Ä‚?basis???Ä“x?\?z?????K?v???????B
+    # basis??¬ -----------------------------------------------------------------
+    # ?ß????¬crosspred?Íƒp?[?Z???g???Æ??basis????????¿½?¿½Ä‚È???B
+    # ?????Å???n???f?[?^?É‘Î???Ä??basis???Ä“x?\?z?????K?v???????B
     p_argvar_temp <- 
       list(fun = varfun,
            intercept = FALSE,
@@ -68,20 +68,20 @@ pref_temp_AF_95th <-
     
     
     # ?_???? ---------------------------------------------------------------------
-    # BLUP???Ê‚Ì‚Ï‚??ß‚??æ“¾
+    # BLUP???Ê‚Ì‚Ï???ß???æ“¾
     p_coef = nationwide_temp_BLUP$blup
     p_vcov = nationwide_temp_BLUP$vcov
     
-    # daily AN vector(f-AN?Å‚?b-AN?Å‚??È‚?????)
+    # daily AN vector(f-AN?Å??b-AN?Å???È??????)
     p_an_heatcold <- (1 - exp(-p_bvarcen_temp %*% p_coef)) * p_data$all
     
-    # MMT?È??Ì‚İ‚? AN
+    # MMT?È???Ì‚İ?? AN
     point_AN <- sum(p_an_heatcold[p_data$over_95th])
     death_denominator <- sum(p_data$all[p_data$over_95th])
     point_AF <- point_AN / death_denominator
     
     
-    # ???Ô??? parametric bootstrap -----------------------------------------------
+    # ???Ô???? parametric bootstrap -----------------------------------------------
     
     # ????????
     set.seed(19941004)
@@ -114,15 +114,15 @@ pref_WBGT_AF_95th <-
   pmap(function(data,MMW,bvar_WBGT,nationwide_WBGT_BLUP){
     
     
-    # ?Ï??Ç‰? --------------------------------------------------------------------
+    # ?Ï???Ç?? --------------------------------------------------------------------
     p_data <- 
       data %>% 
       mutate(over_95th = data$maxWBGT >= quantile(data$maxWBGT,cutoff_per))
     
     
-    # basis?ì¬ -----------------------------------------------------------------
-    # ?ß‹??ì¬crosspred?Íƒp?[?Z???g???Æ‚?basis???????Á‚Ä‚È‚??B
-    # ?????Å??n???f?[?^?É‘Î‚??Ä‚?basis???Ä“x?\?z?????K?v???????B
+    # basis??¬ -----------------------------------------------------------------
+    # ?ß????¬crosspred?Íƒp?[?Z???g???Æ??basis????????¿½?¿½Ä‚È???B
+    # ?????Å???n???f?[?^?É‘Î???Ä??basis???Ä“x?\?z?????K?v???????B
     p_argvar_WBGT <- 
       list(fun = varfun,
            intercept = FALSE,
@@ -138,20 +138,20 @@ pref_WBGT_AF_95th <-
     
     
     # ?_???? ---------------------------------------------------------------------
-    # BLUP???Ê‚Ì‚Ï‚??ß‚??æ“¾
+    # BLUP???Ê‚Ì‚Ï???ß???æ“¾
     p_coef = nationwide_WBGT_BLUP$blup
     p_vcov = nationwide_WBGT_BLUP$vcov
     
     
-    # daily AN vector(f-AN?Å‚?b-AN?Å‚??È‚?????)
+    # daily AN vector(f-AN?Å??b-AN?Å???È??????)
     p_an_heatcold <- (1 - exp(-p_bvarcen_WBGT %*% p_coef)) * p_data$all
     
-    # MMT?È??Ì‚İ‚? AN
+    # MMT?È???Ì‚İ?? AN
     point_AN <- sum(p_an_heatcold[p_data$over_95th])
     death_denominator <- sum(p_data$all[p_data$over_95th])
     point_AF <- point_AN / death_denominator
     
-    # ???Ô??? parametric bootstrap -----------------------------------
+    # ???Ô???? parametric bootstrap -----------------------------------
     
     # ????????
     set.seed(19941004)
@@ -175,7 +175,7 @@ pref_WBGT_AF_95th <-
     return(final_list)
   })
 
-# ???Ê•?
+# ???Ê??
 pref_temp_AF_95th[[1]]
 pref_WBGT_AF_95th[[1]]
 
@@ -250,22 +250,22 @@ table_WBGT_AF_95th
 
 pooled_AF_95th <-
   map_df(c("temperature","WBGT"),function(fheat){
-
+    
     # temperature or WBGT -----------------------------------------------------
     f_data <-
       bind_rows(table_temp_AF_95th %>% mutate(heat = "temperature"),
                 table_WBGT_AF_95th %>% mutate(heat = "WBGT")) %>%
       filter(heat == fheat)
-
+    
     # nationwide --------------------------------------------------------------
-    # national result??two-level random-effect?K?{?Å‚??å‚¤
+    # national result??two-level random-effect?K?{?Å???å‚¤
     mixmeta_nationwide <-
       mixmeta(AF_point,
               AF_var,
               random= ~ 1|region/prefname,
               data = f_data,
               method = "reml")
-
+    
     nationwide_result <-
       mixmeta_nationwide %>%
       ci.lin() %>%
@@ -273,11 +273,11 @@ pooled_AF_95th <-
       select(Estimate,L95=`2.5%`,U95=`97.5%`) %>%
       mutate(region = "Nationwide",
              I2 = mixmeta_nationwide %>% summary() %>% .$i2stat %>% round(1))
-
+    
     # region result -----------------------------------------------------------
     region_result <-
       map_df(1:length(region_vec_level),~{
-
+        
         if (.x %in% c(1,11)) {
           f_data %>%
             filter(region == region_vec_level[.x]) %>%
@@ -292,7 +292,7 @@ pooled_AF_95th <-
                     AF_var,
                     data = f_data %>% filter(region == region_vec_level[.x]),
                     method = "reml")
-
+          
           f_mixmeta %>%
             ci.lin() %>%
             as_tibble() %>%
@@ -301,13 +301,13 @@ pooled_AF_95th <-
                    I2 = f_mixmeta %>% summary() %>% .$i2stat %>% round(1))
         }
       })
-
+    
     bind_rows(nationwide_result,
               region_result) %>%
       mutate(heat = fheat) %>%
       mutate(group = ifelse(region == "Nationwide","Nationwide","region")) %>%
       return()
-
+    
   }) %>%
   mutate(region = region %>% as.factor %>%
            fct_relevel(rev(c(region_vec_level,"Nationwide"))))
@@ -327,7 +327,7 @@ AF_table_95th <-
     table_WBGT_AF_95th %>% mutate(heat = 1)
   )
 
-# binary?????????O??I^2?à‹?ß‚??K?v???B
+# binary?????????O??I^2??¿½?¿½?¿½?ß???K?v???B
 mixmeta_pre_95th <- 
   mixmeta(AF_point ~ 1,
           AF_var,
@@ -357,12 +357,8 @@ AF_usingWBGT_95th <-
          I2 = mixmeta_95th %>% summary() %>% .$i2stat %>% round(2),
          I2_pre = mixmeta_pre_95th %>% summary() %>% .$i2stat %>% round(2))
 
-# ???Ê•?(fix-effect?????Ì•???I2???????Æ‚ÍH)
+# ???Ê??(fix-effect?????Ì????I2???????Æ‚ÍH)
 AF_usingWBGT_95th
 
 # save(AF_usingWBGT_95th,
 #      file="R_code/usingWBGT_data/AF_usingWBGT_95th.R")
-
-
-
-

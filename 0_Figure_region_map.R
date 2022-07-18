@@ -9,67 +9,71 @@ metapredictor_table
 pref_vec
 region_vec_level
 
-nationwide_2stage_BLUP
-
 ##############################################################################
 # 
-# 都道府県名がきもい
+# nasty pref names
 # 
 ##############################################################################
 
-prefJap_vec <- 
-  c("北海道",
-    "青森","岩手","宮城","秋田","山形","福島",
-    "茨城","栃木","群馬","埼玉","千葉","東京","神奈川",
-    "新潟","富山","石川","福井",
-    "山梨","長野",
-    "岐阜","静岡","愛知","三重",
-    "滋賀","京都","大阪","兵庫","奈良","和歌山",
-    "鳥取","島根","岡山","広島",
-    "山口",
-    "徳島","香川","愛媛","高知",
-    "福岡","佐賀","長崎","熊本","大分",
-    "宮崎","鹿児島",
-    "沖縄")
-
-prefJap_tofuken_vec <- 
-  c("北海道",
-    "青森県","岩手県","宮城県","秋田県","山形県","福島県",
-    "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
-    "新潟県","富山県","石川県","福井県",
-    "山梨県","長野県",
-    "岐阜県","静岡県","愛知県","三重県",
-    "滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
-    "鳥取県","島根県","岡山県","広島県",
-    "山口県",
-    "徳島県","香川県","愛媛県","高知県",
-    "福岡県","佐賀県","長崎県","熊本県","大分県",
-    "宮崎県","鹿児島県",
-    "沖縄県")
-
-
-spot <- 
-  c("札幌",
-    "青森","盛岡","仙台","秋田","山形","福島",
-    "水戸","宇都宮","前橋","さいたま","千葉","東京","横浜",
-    "新潟","富山","金沢","福井",
-    "甲府","長野",
-    "岐阜","静岡","名古屋","津",
-    "大津","京都","大阪","神戸","奈良","和歌山",
-    "鳥取","松江","岡山","広島","山口",
-    "徳島","高松","松山","高知",
-    "福岡","佐賀","長崎","熊本","大分",
-    "宮崎","鹿児島",
-    "那覇")
+# prefJap_vec <- 
+#   c("北海道",
+#     "青森","岩手","宮城","秋田","山形","福島",
+#     "茨城","栃木","群馬","埼玉","千葉","東京","神奈川",
+#     "新潟","富山","石川","福井",
+#     "山梨","長野",
+#     "岐阜","静岡","愛知","三重",
+#     "滋賀","京都","大阪","兵庫","奈良","和歌山",
+#     "鳥取","島根","岡山","広島",
+#     "山口",
+#     "徳島","香川","愛媛","高知",
+#     "福岡","佐賀","長崎","熊本","大分",
+#     "宮崎","鹿児島",
+#     "沖縄")
+# 
+# prefJap_tofuken_vec <- 
+#   c("北海道",
+#     "青森県","岩手県","宮城県","秋田県","山形県","福島県",
+#     "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+#     "新潟県","富山県","石川県","福井県",
+#     "山梨県","長野県",
+#     "岐阜県","静岡県","愛知県","三重県",
+#     "滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
+#     "鳥取県","島根県","岡山県","広島県",
+#     "山口県",
+#     "徳島県","香川県","愛媛県","高知県",
+#     "福岡県","佐賀県","長崎県","熊本県","大分県",
+#     "宮崎県","鹿児島県",
+#     "沖縄県")
+# 
+# 
+# spot <- 
+#   c("札幌",
+#     "青森","盛岡","仙台","秋田","山形","福島",
+#     "水戸","宇都宮","前橋","さいたま","千葉","東京","横浜",
+#     "新潟","富山","金沢","福井",
+#     "甲府","長野",
+#     "岐阜","静岡","名古屋","津",
+#     "大津","京都","大阪","神戸","奈良","和歌山",
+#     "鳥取","松江","岡山","広島","山口",
+#     "徳島","高松","松山","高知",
+#     "福岡","佐賀","長崎","熊本","大分",
+#     "宮崎","鹿児島",
+#     "那覇")
+# 
+# summary_table_prefname <- 
+#   data.frame(
+#     prefname_Jap_short = prefJap_vec,
+#     prefname_Jap_long = prefJap_tofuken_vec,
+#     prefname = pref_vec,
+#     capital_spot = spot
+#   )
+# 
+# write.csv(summary_table_prefname,
+#           file='data/summary_table_prefname.csv',
+#           row.names = F)
 
 summary_table_prefname <- 
-  data.frame(
-    prefname_Jap_short = prefJap_vec,
-    prefname_Jap_long = prefJap_tofuken_vec,
-    prefname = pref_vec,
-    capital_spot = spot
-  )
-
+  read.csv("data/summary_table_prefname.csv")
 
 
 # -------------------------------------------------------------------------
@@ -78,13 +82,12 @@ summary_table_prefname <-
 
 pacman::p_load(sf)
 
-setwd("C:/Users/u030t/OneDrive/デスクトップ/R/flexdashboard/japan_ver83")
 
 # https://stackoverflow.com/questions/68478179/how-to-resolve-spherical-geometry-failures-when-joining-spatial-data
 sf::sf_use_s2(FALSE)
 
 pref_map <-
-  read_sf("japan_ver83.shp") %>%
+  read_sf("data/shape_file/japan_ver83/japan_ver83.shp") %>%
   select(-P_NUM, -H_NUM) %>%
   rename(prefJap_tofuken = KEN) %>%
   left_join(data.frame(prefJap = prefJap_vec,
@@ -106,9 +109,6 @@ pref_map <-
   group_by(prefJap) %>% 
   summarize(geometry = geometry %>% st_union())
 
-
-
-setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 pref_map <- 
   pref_map %>% 
   left_join(regional_division %>% select(prefJap, region),
@@ -299,7 +299,7 @@ exposure_map("WBGT","(C)")
 # save
 # -------------------------------------------------------------------------
 
-library(patchwork)
+pacman::p_load(patchwork)
 
 
 above <- 
@@ -316,7 +316,6 @@ bottom <-
 
 
 
-setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 pdf("figure/Fig1_regional_classification.pdf",
     width=10,
     height=6)
@@ -324,4 +323,3 @@ pdf("figure/Fig1_regional_classification.pdf",
 above / bottom
 
 dev.off()
-

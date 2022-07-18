@@ -4,7 +4,7 @@
 
 # font
 
-# setwd("C:/Users/u030t/OneDrive/ƒfƒXƒNƒgƒbƒv/research proposal/temp_WBGT")
+# setwd("C:/Users/u030t/OneDrive/ãƒ‡ã‚¹ã‚¯ãƒˆãƒƒãƒ—/research proposal/temp_WBGT")
 source("R_code/1_prefectural_data.R")
 
 # R object
@@ -64,7 +64,7 @@ regional_summary_stat <-
            fct_relevel(region_vec_level)) %>% 
   arrange(region)
 
-### gtì¬ ###
+### gtä½œæˆ ###
 gt_summary_stat_region <- 
   regional_summary_stat %>% 
   gt(rowname_col = "region") %>% 
@@ -126,11 +126,10 @@ gt_summary_stat_region <-
       spanners = c("Temperature","WBGT")
     )
   )
-  
+
 gt_summary_stat_region
 
 # save --------------------------------------------------------------------
-# setwd("C:/Users/u030t/OneDrive/ƒfƒXƒNƒgƒbƒv/research proposal/temp_WBGT")
 # gtsave(gt_summary_stat_region,
 #        "figure/Table1_summary_stat_region.pdf",
 #        zoom=0.7)
@@ -174,7 +173,7 @@ prefectural_summary_stat <-
   arrange(region,prefname)
 
 
-### gtì¬ ###
+### gtä½œæˆ ###
 gt_summary_stat_pref <- 
   prefectural_summary_stat %>% 
   gt(rowname_col = "prefname",
@@ -231,12 +230,11 @@ gt_summary_stat_pref <-
       spanners = c("Temperature","WBGT")
     )
   )
-  
+
 
 gt_summary_stat_pref
 
 # save --------------------------------------------------------------------
-# setwd("C:/Users/u030t/OneDrive/ƒfƒXƒNƒgƒbƒv/research proposal/temp_WBGT")
 # gtsave(gt_summary_stat_pref,
 #        "figure/TableS2_summary_stat_pref.pdf",
 #        zoom=0.7)

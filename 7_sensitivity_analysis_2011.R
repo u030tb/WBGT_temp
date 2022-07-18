@@ -29,108 +29,9 @@ dos_vec <- 1:184
 # 
 ###############################################################################
 
-# prefecture and region ---------------------------------------------------
+regional_division <- 
+  read.csv("data/0_table_regional_division.csv")
 
-pref_vec <- 
-  c(# Hokkaido(1)
-    "Hokkaido",
-    # Tohoku(6)
-    "Aomori","Iwate","Miyagi","Akita","Yamagata","Fukushima",
-    # KantoKoshin(7)
-    "Ibaraki","Tochigi","Gunma","Saitama","Chiba","Tokyo","Kanagawa",
-    # Hokuriku(4)
-    "Niigata","Toyama","Ishikawa","Fukui",
-    # KantoKoshin(2)
-    "Yamanashi","Nagano",
-    # Tokai(4)
-    "Gifu", "Shizuoka","Aichi","Mie",
-    # Kinki(6)
-    "Shiga","Kyoto","Osaka","Hyogo","Nara","Wakayama",
-    # Chugoku(4)
-    "Tottori","Shimane","Okayama","Hiroshima",
-    # Kyushu_N(6)
-    "Yamaguchi",
-    # Shikoku(4)
-    "Tokushima","Kagawa","Ehime","Kochi",
-    # Kyushu_N(6)
-    "Fukuoka","Saga","Nagasaki","Kumamoto","Oita",
-    # Kyushu_S(2)
-    "Miyazaki","Kagoshima",
-    # Okinawa(1)
-    "Okinawa"
-  )
-
-# region English name
-# https://www.data.jma.go.jp/gmd/cpd/longfcst/en/tourist.html
-
-region_vec <-
-  c("Hokkaido",
-    rep("Tohoku",6),
-    rep("Kanto/Koshin",7),
-    rep("Hokuriku",4),
-    rep("Kanto/Koshin",2),
-    rep("Tokai",4),
-    rep("Kinki",6),
-    rep("Chugoku",4),
-    "Kyushu(North)",
-    rep("Shikoku",4),
-    rep("Kyushu(North)",5),
-    rep("Kyushu(South)",2),
-    "Okinawa")
-
-
-region_vec_level <- 
-  c("Hokkaido",
-    "Tohoku",
-    "Kanto/Koshin",
-    "Hokuriku",
-    "Tokai",
-    "Kinki",
-    "Chugoku",
-    "Shikoku",
-    "Kyushu(North)",
-    "Kyushu(South)",
-    "Okinawa")
-
-# capital cities
-capEng_vec <- 
-  c("Sapporo",
-    "Aomori","Morioka","Sendai","Akita","Yamagata","Fukushima",
-    "Mito","Utsunomiya","Maebashi","Saitama","Chiba","Tokyo","Yokohama",
-    "Niigata","Toyama","Kanazawa","Fukui",
-    "Kofu","Nagano",
-    "Gifu","Shizuoka","Nagoya","Tsu",
-    "Otsu","Kyoto","Osaka","Kobe","Nara","Wakayama",
-    "Tottori","Matsue","Okayama","Hiroshima",
-    "Yamaguchi",
-    "Tokushima","Takamatsu","Matsuyama","Kochi",
-    "Fukuoka","Saga","Nagasaki","Kumamoto","Oita",
-    "Miyazaki","Kagoshima",
-    "Naha")
-
-prefJap_vec <- 
-  c("ñkäCìπ",
-    "ê¬êX","ä‚éË","ã{èÈ","èHìc","éRå`","ïüìá",
-    "àÔèÈ","ì»ñÿ","åQîn","çÈã ","êÁót","ìåãû","ê_ìﬁêÏ",
-    "êVäÉ","ïxéR","êŒêÏ","ïüà‰",
-    "éRóú","í∑ñÏ",
-    "äÚïå","ê√â™","à§ím","éOèd",
-    "é†âÍ","ãûìs","ëÂç„","ï∫å…","ìﬁó«","òaâÃéR",
-    "íπéÊ","ìáç™","â™éR","çLìá",
-    "éRå˚",
-    "ìøìá","çÅêÏ","à§ïQ","çÇím",
-    "ïüâ™","ç≤âÍ","í∑çË","åFñ{","ëÂï™",
-    "ã{çË","é≠éôìá",
-    "â´ìÍ")
-
-
-# table for prefecture, capitals and region
-regional_division = 
-  tibble(prefcode = 1:47,
-         prefname = pref_vec,
-         capEng = capEng_vec,
-         prefJap = prefJap_vec,
-         region = factor(region_vec,levels=unique(region_vec)))
 
 ###############################################################################
 # 
@@ -145,7 +46,7 @@ regional_division =
 
 load("data/temperature_data/all_temp.rda")
 
-# äeìsìπï{åßÇ≤Ç∆ÇÃãCâ∑list
+# temp
 pref_temp <- 
   all_temp %>% 
   map_df(~{bind_rows(.x)}) %>% 
@@ -155,7 +56,7 @@ pref_temp <-
   left_join(regional_division,by="capEng") %>% 
   group_nest(prefcode,prefname,capEng)
 
-# äeìsìπï{åßÇ≤Ç∆ÇÃ(âƒèÍÇÃ)ãCâ∑ÇÃmean/SD
+# temp mean/SD
 pref_temp_metapredictor <- 
   pref_temp %>% 
   mutate(mean_temperature  = map_dbl(data,~{.x$tmax %>% mean}),
@@ -169,7 +70,7 @@ pref_temp_metapredictor <-
 # prefectural-WBGT --------------------------------------------------------
 load("data/WBGT_data/capitals.rda")
 
-# äeìsìπï{åßÇ≤Ç∆ÇÃWBGT
+# WBGT
 pref_WBGT <- 
   capitals %>%
   select(prefJap,date,maxWBGT) %>% 
@@ -181,7 +82,7 @@ pref_WBGT <-
   select(prefname,date,maxWBGT) %>% 
   group_nest(prefname)
 
-# äeìsìπï{åßÇ≤Ç∆ÇÃ(âƒèÍÇÃ)WBGTÇÃïΩãœÅESD
+# WBGT mean/SD
 pref_WBGT_metapredictor <- 
   pref_WBGT %>% 
   unnest(data) %>% 
@@ -254,7 +155,6 @@ pref_list <-
 ### set parameters for first-stage analysis ---------------------------------
 # heat-response relationship
 varfun <- "ns"
-# 70-95Ç∆Ç©ÇÕÇ‚ÇÁÇ»Ç¢ï˚Ç™Ç¢Ç¢Ç©Ç»ÅAç≈çÇtempÇ™â∫ÇËÇ™Çø
 varper <- c(50, 90)
 
 # lag-response relationship
@@ -275,10 +175,10 @@ first_result_list <-
   ### temp ###
   mutate(first_prepre_temp = map(data, ~{
     
-    # data ------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------
+    # crossbasis
     f_cb_temp <- 
       crossbasis(f_data$tmax, 
                  
@@ -290,7 +190,7 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------
+    # statmodel
     f_model_temp <- 
       glm(all ~ f_cb_temp + year + dow + 
             ns(dos,knots=quantile(dos_vec,
@@ -298,14 +198,14 @@ first_result_list <-
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage -------------------------------------
-    # reference := mean() ~ (âﬂãéÇÃêlà◊ìIäàìÆóRóàÇÃéÄé“êîå§ãÜ
+    # crossreduce for first_stage
+    # reference := mean() 
     f_crossreduce_temp <- 
       crossreduce(f_cb_temp, f_model_temp, 
                   cen = mean(f_data$tmax,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -----------------------------------------------
+    # first-stage curve
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = mean(f_data$tmax,na.rm=T))
@@ -315,9 +215,11 @@ first_result_list <-
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = f_MMT)
     
-    # -------------------------------------------------------------------------
+    
     list(crossreduce_temp = f_crossreduce_temp,
-         crosspred_temp = f_crosspred_temp) %>% 
+         crosspred_temp = f_crosspred_temp,
+         # qAIC
+         qAIC_temp = fqaic(f_model_temp)) %>% 
       return()
     
   })) %>% 
@@ -325,7 +227,8 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% coef}),
          first_vcov_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% vcov}),
-         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp})) %>% 
+         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp}),
+         qAIC_temp = map_dbl(first_prepre_temp,~{.x$qAIC_temp})) %>% 
   select(-first_prepre_temp) %>% 
   
   
@@ -333,10 +236,10 @@ first_result_list <-
   mutate(first_prepre_WBGT = map(data, ~{
     
     
-    # data ------------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------------
+    # crossbasis
     f_cb_WBGT <- 
       crossbasis(f_data$maxWBGT, 
                  lag=laglag,
@@ -347,21 +250,21 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------------
+    # statmodel
     f_model_WBGT <- 
       glm(all ~ f_cb_WBGT + year + dow + 
             ns(dos,knots=quantile(dos_vec,seq(df_ns_dos)/(df_ns_dos+1))):factor(year),
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage ---------------------------------------------
-    # reference := mean() ~ (âﬂãéÇÃêlà◊ìIäàìÆóRóàÇÃéÄé“êîå§ãÜ
+    # crossreduce for first_stag
+    # reference := mean() ~ 
     f_crossreduce_WBGT <- 
       crossreduce(f_cb_WBGT, f_model_WBGT, 
                   cen = mean(f_data$maxWBGT,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -------------------------------------------------------
+    # first-stage curve
     f_crosspred_WBGT <- 
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = mean(f_data$maxWBGT,na.rm=T))
@@ -371,9 +274,11 @@ first_result_list <-
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = f_MMW)
     
-    # -------------------------------------------------------------------------
+    
     list(crossreduce_WBGT = f_crossreduce_WBGT,
-         crosspred_WBGT = f_crosspred_WBGT) %>% 
+         crosspred_WBGT = f_crosspred_WBGT,
+         # qAIC
+         qAIC_WBGT = fqaic(f_model_WBGT)) %>% 
       return()
     
   })) %>% 
@@ -381,8 +286,41 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% coef}),
          first_vcov_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% vcov}),
-         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT})) %>% 
+         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT}),
+         qAIC_WBGT = map_dbl(first_prepre_WBGT,~{.x$qAIC_WBGT})) %>% 
   select(-first_prepre_WBGT)
+
+
+# -------------------------------------------------------------------------
+# QAIC 
+# -------------------------------------------------------------------------
+
+bind_rows(
+  
+  # pref-level qAICs were aggregated with weight (pref-level sum of total deaths)
+  first_result_list %>%
+    select(prefname, qAIC_temp, qAIC_WBGT) %>%
+    mutate(weight_total_all = map_dbl(1:47,function(x){
+      first_result_list$data[[x]]$all %>% sum
+    })) %>%
+    mutate(weight_sum = sum(weight_total_all)) %>%
+    mutate(weight_frac = weight_total_all / weight_sum) %>%
+    mutate(qAIC_temp_weight = qAIC_temp * weight_frac,
+           qAIC_WBGT_weight = qAIC_WBGT * weight_frac) %>%
+    summarize(qAIC_temp = sum(qAIC_temp_weight),
+              qAIC_WBGT = sum(qAIC_WBGT_weight)) %>%
+    mutate(weight = "case_weight"),
+  
+  # simple mean
+  first_result_list %>%
+    select(prefname, qAIC_temp, qAIC_WBGT) %>%
+    summarize(qAIC_temp = mean(qAIC_temp),
+              qAIC_WBGT = mean(qAIC_WBGT)) %>%
+    mutate(weight = "simple")
+) %>%
+  
+  write.csv("R_code/qAIC/qAIC_y2011.csv",
+            row.names = F)
 
 
 ###############################################################################
@@ -441,7 +379,7 @@ nationwide_2stage_BLUP <-
   ### bvar_temp ###
   mutate(bvar_temp = map(data,~{
     
-    # percentileÇ≤Ç∆Ç…äÓíÍÇìæÇÈ
+    # basis by percentile
     predvar_temp <- quantile(.x$tmax,0:1000/1000,na.rm=T) %>% round(1)
     argvar_temp <- list(x = predvar_temp, 
                         fun = varfun,
@@ -461,7 +399,7 @@ nationwide_2stage_BLUP <-
   ### bvar_WBGT ###
   mutate(bvar_WBGT = map(data,~{
     
-    # percentileÇ≤Ç∆Ç…äÓíÍÇìæÇÈ
+    # basis by percentile
     predvar_WBGT <- quantile(.x$maxWBGT,0:1000/1000,na.rm=T) %>% round(1)
     argvar_WBGT <- list(x = predvar_WBGT, 
                         fun = varfun,
@@ -480,9 +418,8 @@ nationwide_2stage_BLUP <-
 
 
 # -------------------------------------------------------------------------
-# crosspredçÏê¨ -------------------------------------------------------------
+# crosspred ---------------------------------------------------------------
 # -------------------------------------------------------------------------
-# crosspredÇçÏê¨Ç∑ÇÈÇ…ÇÕ4Ç¬ïœêîÇ™ïKóvÇ»ÇÃÇ≈ï ìrçÏê¨
 nationwide_2stage_BLUP <- 
   nationwide_2stage_BLUP %>% 
   ### temp ###
@@ -557,7 +494,7 @@ RR_highper <-
 # 
 ###############################################################################
 # -------------------------------------------------------------------------
-# logRRèÄîı -----------------------------------------------------------------
+# logRR -------------------------------------------------------------------
 # -------------------------------------------------------------------------
 
 logRR_highper <- 
@@ -607,14 +544,14 @@ pooled_RRtot <-
   map_df(0:1,function(fheat){
     map(1:4,function(fper){
       
-      # percentile --------------------------------------------------------------
+      # percentile
       f_logRR_highper <- 
         logRR_highper %>% 
         filter(high_per == paste0("per",seq(90,97.5,2.5))[fper],
                heat == fheat)
       
-      # nationwide --------------------------------------------------------------
-      # national resultÇ…ÇÕtwo-level random-effectïKê{
+      # nationwide
+      # two-level random-effect meta-analysis for national result
       mixmeta_nationwide <- 
         mixmeta(logRR,
                 logRRvar,
@@ -631,13 +568,13 @@ pooled_RRtot <-
                I2 = mixmeta_nationwide %>% summary() %>% .$i2stat %>% round(1))
       
       
-      # region ------------------------------------------------------------------
+      # region
       region_result <- 
         map_df(1:length(region_vec_level),~{
           
           if (.x %in% c(1,11)) {
             
-            # ÉÅÉ^ÉAÉiÇµÇ»Ç¢ñkäCìπâ´ìÍÇÕlogâªÇµÇ»Ç¢allRRfitÇ»Ç«Ç©ÇÁéÊìæ
+            # no meta-analysis for Hokkaido and Okinawa
             bind_rows(
               RR_highper %>% 
                 select(prefname,region,RR_temp_highper) %>% 
@@ -660,7 +597,7 @@ pooled_RRtot <-
             
           } else {
             
-            # ñkäCìπâ´ìÍà»äOÇÃÇÕlogâªÇµÇƒÉÅÉ^ÉAÉi
+            # meta-analysis except for Hokkaido and Okinawa
             f_mixmeta <- 
               mixmeta(logRR ~ 1,
                       logRRvar,
@@ -697,58 +634,58 @@ pooled_RRtot <-
 # 
 ###############################################################################
 
-RR_usingWBGT <- 
+RR_usingWBGT_2011 <- 
   tibble(pers = 1:4) %>% 
   
-  # mixmeta -----------------------------------------------------------------
-mutate(logRR_mixmeta = map(pers,~{
-  mixmeta(logRR ~ heat,
-          logRRvar,
-          data = logRR_highper %>% 
-            filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
-          random= ~ 1|region/prefname,
-          method = "reml")
-})) %>% 
+  # mixmeta
+  mutate(logRR_mixmeta = map(pers,~{
+    mixmeta(logRR ~ heat,
+            logRRvar,
+            data = logRR_highper %>% 
+              filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
+            random= ~ 1|region/prefname,
+            method = "reml")
+  })) %>% 
   
-  # I2 ----------------------------------------------------------------------
-mutate(I2 = map_dbl(logRR_mixmeta,~{
-  .x %>% summary %>% .$i2stat %>% round(2) %>% 
-    return()
-})) %>% 
+  # I2
+  mutate(I2 = map_dbl(logRR_mixmeta,~{
+    .x %>% summary %>% .$i2stat %>% round(2) %>% 
+      return()
+  })) %>% 
   
-  # I2_pre ----------------------------------------------------------------------
-mutate(I2_pre = map_dbl(pers,~{
-  mixmeta(logRR ~ 1,
-          logRRvar,
-          data = logRR_highper %>% 
-            filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
-          random= ~ 1|region/prefname,
-          method = "reml") %>% 
-    summary %>% .$i2stat %>% round(2) %>% 
-    return()
-})) %>% 
+  # I2_pre
+  mutate(I2_pre = map_dbl(pers,~{
+    mixmeta(logRR ~ 1,
+            logRRvar,
+            data = logRR_highper %>% 
+              filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
+            random= ~ 1|region/prefname,
+            method = "reml") %>% 
+      summary %>% .$i2stat %>% round(2) %>% 
+      return()
+  })) %>% 
   
-  # usingWBGT ---------------------------------------------------------------
-mutate(result_mixmeta = map2(pers,logRR_mixmeta,~{
-  .y %>% 
-    ci.exp %>% 
-    as.data.frame() %>% 
-    mutate(rowlabel = rownames(.)) %>% 
-    filter(rowlabel == "heat") %>% 
-    select(Estimate=`exp(Est.)`,L95=`2.5%`,U95=`97.5%`) %>% 
-    mutate(group = "main",
-           vars = paste0("per",seq(90,97.5,2.5))[.x]) %>% 
-    # percent change
-    mutate(across(.cols=all_of(c("Estimate","L95","U95")),
-                  .fns=function(mimi){(mimi-1)*100})) %>% 
-    as_tibble()
-})) %>% 
+  # usingWBGT
+  mutate(result_mixmeta = map2(pers,logRR_mixmeta,~{
+    .y %>% 
+      ci.exp %>% 
+      as.data.frame() %>% 
+      mutate(rowlabel = rownames(.)) %>% 
+      filter(rowlabel == "heat") %>% 
+      select(Estimate=`exp(Est.)`,L95=`2.5%`,U95=`97.5%`) %>% 
+      mutate(group = "y2011",
+             vars = paste0("per",seq(90,97.5,2.5))[.x]) %>% 
+      # percent change
+      mutate(across(.cols=all_of(c("Estimate","L95","U95")),
+                    .fns=function(mimi){(mimi-1)*100})) %>% 
+      as_tibble()
+  })) %>% 
   unnest(result_mixmeta) %>% 
   select(-logRR_mixmeta)
 
 
-RR_usingWBGT
+RR_usingWBGT_2011
 
-
-# -------------------------------------------------------------------------
+# save(RR_usingWBGT_2011,
+#      file="R_code/usingWBGT_data/RR_usingWBGT_2011.R")
 

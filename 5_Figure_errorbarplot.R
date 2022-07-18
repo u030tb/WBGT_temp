@@ -6,13 +6,13 @@ source("R_code/3_AF_90th.R")
 source("R_code/3_AF_95th.R")
 source("R_code/3_RR.R")
 
-# ã‚©‚ç‡”Ô‚É
+# ä¸Šã‹ã‚‰é †ç•ªã«
 # (left)pref-RR90 ~ (right)region-RR90
 # (left)pref-RR95 ~ (right)region-RR95
 # (left)pref-AF90 ~ (right)region-AF90
 # (left)pref-AF95 ~ (right)region-AF95
 
-# ˆÈ‰º‚ğì¬‚µ‚Ä‚±‚¢
+# ä»¥ä¸‹ã‚’ä½œæˆã—ã¦ã“ã„
 # AF
 table_temp_AF_90th
 table_WBGT_AF_90th
@@ -29,8 +29,8 @@ pooled_RRtot
 
 ###############################################################################
 # 
-# ‹ï‘Ì“I‚ÈAF and RR‚Ì’l‚Ìƒe[ƒuƒ‹•Û‘¶
-# (nationwide‚Í•\¦‚µ‚È‚­‚Ä‚à‚¢‚¢‚©‚È)
+# å…·ä½“çš„ãªAF and RRã®å€¤ã®ãƒ†ãƒ¼ãƒ–ãƒ«ä¿å­˜
+# (nationwideã¯è¡¨ç¤ºã—ãªãã¦ã‚‚ã„ã„ã‹ãª)
 # 
 ###############################################################################
 
@@ -223,7 +223,7 @@ function_region_errorbarplot <-
 # (4) [FigS4] region-level RR&AF 95th
 # -------------------------------------------------------------------------
 
-library(ggpubr)
+pacman::p_load(ggpubr)
 # -------------------------------------------------------------------------
 # (1) [FigS2]   pref-level RR&AF 90th
 # -------------------------------------------------------------------------
@@ -319,6 +319,3 @@ pdf("figure/FigS4_errorbarplot_region_95th.pdf",
     width=10,height=4)
 gg_FigS4
 dev.off()
-
-
-

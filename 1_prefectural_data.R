@@ -23,61 +23,22 @@ pacman::p_load(
 months <- 5:10
 dos_vec <- 1:184
 
+# FUNCTION TO COMPUTE THE Q-AIC IN QUASI-POISSON MODELS
+fqaic <- function(model) {
+  loglik <- sum(dpois(model$y,model$fitted.values,log=TRUE))
+  phi <- summary(model)$dispersion
+  qaic <- -2*loglik + 2*summary(model)$df[3]*phi
+  return(qaic)
+}
+
 ###############################################################################
 # 
-# regional_division
+# [1] regional_division
 # 
 ###############################################################################
 
-# prefecture and region ---------------------------------------------------
-
-pref_vec <- 
-  c(# Hokkaido(1)
-    "Hokkaido",
-    # Tohoku(6)
-    "Aomori","Iwate","Miyagi","Akita","Yamagata","Fukushima",
-    # KantoKoshin(7)
-    "Ibaraki","Tochigi","Gunma","Saitama","Chiba","Tokyo","Kanagawa",
-    # Hokuriku(4)
-    "Niigata","Toyama","Ishikawa","Fukui",
-    # KantoKoshin(2)
-    "Yamanashi","Nagano",
-    # Tokai(4)
-    "Gifu", "Shizuoka","Aichi","Mie",
-    # Kinki(6)
-    "Shiga","Kyoto","Osaka","Hyogo","Nara","Wakayama",
-    # Chugoku(4)
-    "Tottori","Shimane","Okayama","Hiroshima",
-    # Kyushu_N(6)
-    "Yamaguchi",
-    # Shikoku(4)
-    "Tokushima","Kagawa","Ehime","Kochi",
-    # Kyushu_N(6)
-    "Fukuoka","Saga","Nagasaki","Kumamoto","Oita",
-    # Kyushu_S(2)
-    "Miyazaki","Kagoshima",
-    # Okinawa(1)
-    "Okinawa"
-  )
-
-# region English name
-# https://www.data.jma.go.jp/gmd/cpd/longfcst/en/tourist.html
-
-region_vec <-
-  c("Hokkaido",
-    rep("Tohoku",6),
-    rep("Kanto/Koshin",7),
-    rep("Hokuriku",4),
-    rep("Kanto/Koshin",2),
-    rep("Tokai",4),
-    rep("Kinki",6),
-    rep("Chugoku",4),
-    "Kyushu(North)",
-    rep("Shikoku",4),
-    rep("Kyushu(North)",5),
-    rep("Kyushu(South)",2),
-    "Okinawa")
-
+regional_division <- 
+  read.csv("data/0_table_regional_division.csv")
 
 region_vec_level <- 
   c("Hokkaido",
@@ -92,45 +53,7 @@ region_vec_level <-
     "Kyushu(South)",
     "Okinawa")
 
-# capital cities
-capEng_vec <- 
-  c("Sapporo",
-    "Aomori","Morioka","Sendai","Akita","Yamagata","Fukushima",
-    "Mito","Utsunomiya","Maebashi","Saitama","Chiba","Tokyo","Yokohama",
-    "Niigata","Toyama","Kanazawa","Fukui",
-    "Kofu","Nagano",
-    "Gifu","Shizuoka","Nagoya","Tsu",
-    "Otsu","Kyoto","Osaka","Kobe","Nara","Wakayama",
-    "Tottori","Matsue","Okayama","Hiroshima",
-    "Yamaguchi",
-    "Tokushima","Takamatsu","Matsuyama","Kochi",
-    "Fukuoka","Saga","Nagasaki","Kumamoto","Oita",
-    "Miyazaki","Kagoshima",
-    "Naha")
-
-prefJap_vec <- 
-  c("北海道",
-    "青森","岩手","宮城","秋田","山形","福島",
-    "茨城","栃木","群馬","埼玉","千葉","東京","神奈川",
-    "新潟","富山","石川","福井",
-    "山梨","長野",
-    "岐阜","静岡","愛知","三重",
-    "滋賀","京都","大阪","兵庫","奈良","和歌山",
-    "鳥取","島根","岡山","広島",
-    "山口",
-    "徳島","香川","愛媛","高知",
-    "福岡","佐賀","長崎","熊本","大分",
-    "宮崎","鹿児島",
-    "沖縄")
-
-
-# table for prefecture, capitals and region
-regional_division = 
-  tibble(prefcode = 1:47,
-         prefname = pref_vec,
-         capEng = capEng_vec,
-         prefJap = prefJap_vec,
-         region = factor(region_vec,levels=unique(region_vec)))
+pref_vec <- regional_division$prefname
 
 ###############################################################################
 # 
@@ -243,7 +166,6 @@ pref_list$data[[1]] %>% tail
 regional_division
 pref_list
 metapredictor_table
-pref_vec
 region_vec_level
 
 
@@ -258,13 +180,3 @@ map_df(1:47,function(fpref){
     corr = cor(fdata$tmax,fdata$maxWBGT)
   ) %>% return()
 }) %>% arrange(corr)
-
-
-
-
-
-
-
-
-
-

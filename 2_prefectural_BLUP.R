@@ -1,4 +1,5 @@
-source("R_code/1_prefectural_data.R")
+# source("R_code/1_prefectural_data.R")
+par(family= "HiraKakuProN-W3")
 
 regional_division
 pref_list
@@ -31,17 +32,16 @@ df_ns_dos <- 2
 
 # statistical model -------------------------------------------------------
 # reduced coef & vcov -----------------------------------------------------
-
 first_result_list <- 
   pref_list %>% 
   
   ### temp ###
   mutate(first_prepre_temp = map(data, ~{
     
-    # data ------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------
+    # crossbasis
     f_cb_temp <- 
       crossbasis(f_data$tmax, 
                  
@@ -53,7 +53,7 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------
+    # statmodel
     f_model_temp <- 
       glm(all ~ f_cb_temp + year + dow + 
             ns(dos,knots=quantile(dos_vec,
@@ -61,14 +61,14 @@ first_result_list <-
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage -------------------------------------
-    # reference := mean() ~ (?ߋ??̐l?דI?????R???̎??Ґ?????
+    # crossreduce for first_stage
+    # reference := mean() ~ 
     f_crossreduce_temp <- 
       crossreduce(f_cb_temp, f_model_temp, 
                   cen = mean(f_data$tmax,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -----------------------------------------------
+    # first-stage curve
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = mean(f_data$tmax,na.rm=T))
@@ -77,10 +77,11 @@ first_result_list <-
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = f_MMT)
-    
-    # -------------------------------------------------------------------------
+
     list(crossreduce_temp = f_crossreduce_temp,
-         crosspred_temp = f_crosspred_temp) %>% 
+         crosspred_temp = f_crosspred_temp,
+         # qAIC
+         qAIC_temp = fqaic(f_model_temp)) %>% 
       return()
     
   })) %>% 
@@ -88,7 +89,8 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% coef}),
          first_vcov_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% vcov}),
-         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp})) %>% 
+         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp}),
+         qAIC_temp = map_dbl(first_prepre_temp,~{.x$qAIC_temp})) %>% 
   select(-first_prepre_temp) %>% 
   
   
@@ -96,10 +98,10 @@ first_result_list <-
   mutate(first_prepre_WBGT = map(data, ~{
     
     
-    # data ------------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------------
+    # crossbasis
     f_cb_WBGT <- 
       crossbasis(f_data$maxWBGT, 
                  lag=laglag,
@@ -110,21 +112,21 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------------
+    # statmodel
     f_model_WBGT <- 
       glm(all ~ f_cb_WBGT + year + dow + 
             ns(dos,knots=quantile(dos_vec,seq(df_ns_dos)/(df_ns_dos+1))):factor(year),
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage ---------------------------------------------
-    # reference := mean() ~ (?ߋ??̐l?דI?????R???̎??Ґ?????
+    # crossreduce for first_stage
+    # reference := mean() ~ 
     f_crossreduce_WBGT <- 
       crossreduce(f_cb_WBGT, f_model_WBGT, 
                   cen = mean(f_data$maxWBGT,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -------------------------------------------------------
+    # first-stage curve
     f_crosspred_WBGT <- 
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = mean(f_data$maxWBGT,na.rm=T))
@@ -134,9 +136,11 @@ first_result_list <-
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = f_MMW)
     
-    # -------------------------------------------------------------------------
+
     list(crossreduce_WBGT = f_crossreduce_WBGT,
-         crosspred_WBGT = f_crosspred_WBGT) %>% 
+         crosspred_WBGT = f_crosspred_WBGT,
+         # qAIC
+         qAIC_WBGT = fqaic(f_model_WBGT)) %>% 
       return()
     
   })) %>% 
@@ -144,7 +148,8 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% coef}),
          first_vcov_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% vcov}),
-         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT})) %>% 
+         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT}),
+         qAIC_WBGT = map_dbl(first_prepre_WBGT,~{.x$qAIC_WBGT})) %>% 
   select(-first_prepre_WBGT)
 
 
@@ -268,7 +273,7 @@ wald_result <-
 
 wald_result
 # save(wald_result,
-#      file="R_code/usingWBGT_data/wald_result.R")
+#      file="R_code/wald_result.R")
 
 
 # -------------------------------------------------------------------------
@@ -342,7 +347,7 @@ nationwide_2stage_BLUP <-
                return()
              
            })) %>% 
- 
+  
   ### WBGT ###
   mutate(crosspred_WBGT_BLUP = 
            nationwide_2stage_BLUP %>% 
@@ -371,81 +376,119 @@ nationwide_2stage_BLUP
 # visualization
 # -------------------------------------------------------------------------
 
-boldbold <- 1.2
+# boldbold <- 1.2
+# 
+# BLUP_temp_curve <-
+#   function(p){
+#     p_BLUP_temp <-
+#       nationwide_2stage_BLUP %>%
+#       filter(prefcode == p) %>%
+#       select(prefname,MMT,MMTP,crosspred_temp_BLUP) %>%
+#       mutate(across(.cols=contains("MM"),
+#                     .fns=~{round(.x,1)}))
+#     
+#     p_BLUP_temp$crosspred_temp_BLUP[[1]] %>%
+#       plot(ylim=c(0.95,1.5),
+#            cex.axis = boldbold,
+#            cex.lab = boldbold,
+#            cex.main = boldbold,
+#            xlab="Daily maximum temperature (��)",
+#            ylab="Relative Risk",
+#            family="sans")
+#     title(glue::glue("({p}) {p_BLUP_temp$prefname} (Temperature)"),
+#           font.main = 1,
+#           cex.main = boldbold,
+#           adj = 0,
+#           family="sans")
+#     # MMT
+#     segments(x0=p_BLUP_temp$MMT, y0=0.1, x1=p_BLUP_temp$MMT, y1=1.48,
+#              lty="dashed")
+#     text(x=p_BLUP_temp$MMT,y=1.49,
+#          family="sans",
+#          cex = boldbold - 0.2,
+#          labels=paste0("MMT = ",p_BLUP_temp$MMT," (",p_BLUP_temp$MMTP,"%)"))
+#     
+#   }
+# 
+# #
+# BLUP_WBGT_curve <-
+#   function(p){
+#     p_BLUP_WBGT <-
+#       nationwide_2stage_BLUP %>%
+#       filter(prefcode == p) %>%
+#       select(prefname,MMW,MMWP,crosspred_WBGT_BLUP) %>%
+#       mutate(across(.cols=contains("MM"),
+#                     .fns=~{round(.x,1)}))
+#     
+#     p_BLUP_WBGT$crosspred_WBGT_BLUP[[1]] %>%
+#       plot(ylim=c(0.95,1.5),
+#            cex.axis = boldbold,
+#            cex.lab = boldbold,
+#            cex.main = boldbold,
+#            xlab="Daily maximum WBGT (��)",
+#            ylab="Relative Risk",
+#            family="sans")
+#     title(glue::glue("({p}) {p_BLUP_WBGT$prefname} (WBGT)"),
+#           font.main = 1,
+#           cex.main = boldbold,
+#           adj = 0,
+#           family="sans")
+#     
+#     # MMW
+#     segments(x0=p_BLUP_WBGT$MMW, y0=0.1, x1=p_BLUP_WBGT$MMW, y1=1.48,
+#              lty="dashed")
+#     text(x=p_BLUP_WBGT$MMW,y=1.49,
+#          family="sans",
+#          cex = boldbold - 0.2,
+#          labels=paste0("MMW = ",p_BLUP_WBGT$MMW," (",p_BLUP_WBGT$MMWP,"%)"))
+#     
+#   }
+# #
+# 
+# p=34
+# BLUP_temp_curve(p)
+# BLUP_WBGT_curve(p)
 
-BLUP_temp_curve <-
-  function(p){
-    p_BLUP_temp <-
-      nationwide_2stage_BLUP %>%
-      filter(prefcode == p) %>%
-      select(prefname,MMT,MMTP,crosspred_temp_BLUP) %>%
-      mutate(across(.cols=contains("MM"),
-                    .fns=~{round(.x,1)}))
 
-    p_BLUP_temp$crosspred_temp_BLUP[[1]] %>%
-      plot(ylim=c(0.95,1.5),
-           cex.axis = boldbold,
-           cex.lab = boldbold,
-           cex.main = boldbold,
-           xlab="Daily maximum temperature (°C)",
-           ylab="Relative Risk",
-           family="sans")
-    title(glue::glue("({p}) {p_BLUP_temp$prefname} (Temperature)"),
-          font.main = 1,
-          cex.main = boldbold,
-          adj = 0,
-          family="sans")
-    # MMT
-    segments(x0=p_BLUP_temp$MMT, y0=0.1, x1=p_BLUP_temp$MMT, y1=1.48,
-             lty="dashed")
-    text(x=p_BLUP_temp$MMT,y=1.49,
-         family="sans",
-         cex = boldbold - 0.2,
-         labels=paste0("MMT = ",p_BLUP_temp$MMT," (",p_BLUP_temp$MMTP,"%)"))
-    
-  }
+# -------------------------------------------------------------------------
+# QAIC 
+# -------------------------------------------------------------------------
 
-#
-BLUP_WBGT_curve <-
-  function(p){
-    p_BLUP_WBGT <-
-      nationwide_2stage_BLUP %>%
-      filter(prefcode == p) %>%
-      select(prefname,MMW,MMWP,crosspred_WBGT_BLUP) %>%
-      mutate(across(.cols=contains("MM"),
-                    .fns=~{round(.x,1)}))
+# bind_rows(
+#   
+#   # pref-level qAICs were aggregated with weight (pref-level sum of total deaths)
+#   first_result_list %>% 
+#     select(prefname, qAIC_temp, qAIC_WBGT) %>% 
+#     mutate(weight_total_all = map_dbl(1:47,function(x){
+#       first_result_list$data[[x]]$all %>% sum
+#     })) %>% 
+#     mutate(weight_sum = sum(weight_total_all)) %>% 
+#     mutate(weight_frac = weight_total_all / weight_sum) %>% 
+#     mutate(qAIC_temp_weight = qAIC_temp * weight_frac,
+#            qAIC_WBGT_weight = qAIC_WBGT * weight_frac) %>% 
+#     summarize(qAIC_temp = sum(qAIC_temp_weight),
+#               qAIC_WBGT = sum(qAIC_WBGT_weight)) %>% 
+#     mutate(weight = "case_weight"),
+#   
+#   # simple mean
+#   first_result_list %>% 
+#     select(prefname, qAIC_temp, qAIC_WBGT) %>% 
+#     summarize(qAIC_temp = mean(qAIC_temp),
+#               qAIC_WBGT = mean(qAIC_WBGT)) %>% 
+#     mutate(weight = "simple")
+# ) %>% 
+#   
+#   write.csv("R_code/qAIC/qAIC_main.csv",
+#             row.names = F)
 
-    p_BLUP_WBGT$crosspred_WBGT_BLUP[[1]] %>%
-      plot(ylim=c(0.95,1.5),
-           cex.axis = boldbold,
-           cex.lab = boldbold,
-           cex.main = boldbold,
-           xlab="Daily maximum WBGT (°C)",
-           ylab="Relative Risk",
-           family="sans")
-    title(glue::glue("({p}) {p_BLUP_WBGT$prefname} (WBGT)"),
-          font.main = 1,
-          cex.main = boldbold,
-          adj = 0,
-          family="sans")
-    
-    # MMW
-    segments(x0=p_BLUP_WBGT$MMW, y0=0.1, x1=p_BLUP_WBGT$MMW, y1=1.48,
-             lty="dashed")
-    text(x=p_BLUP_WBGT$MMW,y=1.49,
-         family="sans",
-         cex = boldbold - 0.2,
-         labels=paste0("MMW = ",p_BLUP_WBGT$MMW," (",p_BLUP_WBGT$MMWP,"%)"))
-    
-  }
-#
+# -------------------------------------------------------------------------
+# QAIC by pref
+# -------------------------------------------------------------------------
 
-p=34
-BLUP_temp_curve(p)
-BLUP_WBGT_curve(p)
-
-
-
+# first_result_list %>% 
+#   select(prefname, qAIC_temp, qAIC_WBGT) %>% 
+#   mutate(low_WBGT = ifelse(qAIC_temp > qAIC_WBGT, 1, NA)) %>% 
+#   as.data.frame()
 
 # -------------------------------------------------------------------------
 # visualization for BLUP_pref47
@@ -486,4 +529,3 @@ BLUP_WBGT_curve(p)
 # BLUP_WBGT_curve(p)
 # 
 # dev.off()
-

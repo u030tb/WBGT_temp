@@ -8,10 +8,12 @@ source("R_code/1_prefectural_data.R")
 # [4] BLUP from nationwide meta-analysis
 
 # -------------------------------------------------------------------------
-# sensitivity analysis June-September
-# -------------------------------------------------------------------------
-months <- 6:9
-dos_vec <- 1:122
+# month?
+# months <- 6:9
+# dos_vec <- 1:122
+
+months <- 5:10
+dos_vec <- 1:184
 
 ###############################################################################
 # 
@@ -41,15 +43,15 @@ pref_temp <-
   map_df(~{bind_rows(.x)}) %>% 
   filter(month %in% months) %>% 
   mutate(date = ymd(paste(year,month,day,sep="-"))) %>% 
-  select(capEng=place,date,tmax) %>% 
+  select(capEng=place,date,tmean) %>% 
   left_join(regional_division,by="capEng") %>% 
   group_nest(prefcode,prefname,capEng)
 
-# temp mean/SD
+# temp mean SD
 pref_temp_metapredictor <- 
   pref_temp %>% 
-  mutate(mean_temperature  = map_dbl(data,~{.x$tmax %>% mean}),
-         sd_temperature    = map_dbl(data,~{.x$tmax %>% sd})) %>% 
+  mutate(mean_temperature  = map_dbl(data,~{.x$tmean %>% mean}),
+         sd_temperature    = map_dbl(data,~{.x$tmean %>% sd})) %>% 
   select(prefname,mean_temperature,sd_temperature)
 
 # -------------------------------------------------------------------------
@@ -62,20 +64,20 @@ load("data/WBGT_data/capitals.rda")
 # WBGT
 pref_WBGT <- 
   capitals %>%
-  select(prefJap,date,maxWBGT) %>% 
+  select(prefJap,date,meanWBGT) %>% 
   # filter(prefJap == levels(capitals$prefJap)[p]) %>% 
   left_join(regional_division,
             by="prefJap") %>% 
   mutate(month = month(date)) %>% 
   filter(month %in% months) %>% 
-  select(prefname,date,maxWBGT) %>% 
+  select(prefname,date,meanWBGT) %>% 
   group_nest(prefname)
 
-# WBGT mean/SD
+# WBGT mean SD
 pref_WBGT_metapredictor <- 
   pref_WBGT %>% 
   unnest(data) %>% 
-  rename(WBGT = maxWBGT) %>% 
+  rename(WBGT = meanWBGT) %>% 
   group_by(prefname) %>% 
   summarize(across(.cols=c(WBGT),
                    .fns=list(mean = mean,
@@ -134,26 +136,23 @@ pref_list$data[[1]] %>% tail
 
 
 # -------------------------------------------------------------------------
-# correlation
-# low correlation for Jun-Sep
-
 pref_list
 map_df(1:47,function(fpref){
   fdata <- pref_list[fpref,]
   data.frame(
     prefname = fdata$prefname,
-    corr = cor(fdata$data[[1]]$maxWBGT,
-               fdata$data[[1]]$tmax) %>% round(3)
+    corr = cor(fdata$data[[1]]$meanWBGT,
+               fdata$data[[1]]$tmean) %>% round(3)
   )
-}) %>% write.csv(file="cor.csv")
+})
+
+# source("R_code/1_prefectural_data.R")
 
 regional_division
 pref_list
 metapredictor_table
 pref_vec
 region_vec_level
-
-
 
 ###############################################################################
 # 
@@ -176,8 +175,8 @@ df_ns_dos <- 2
 # -------------------------------------------------------------------------
 
 
-# statistical model
-# reduced coef & vcov
+# statistical model -------------------------------------------------------
+# reduced coef & vcov -----------------------------------------------------
 
 first_result_list <- 
   pref_list %>% 
@@ -190,12 +189,12 @@ first_result_list <-
     
     # crossbasis
     f_cb_temp <- 
-      crossbasis(f_data$tmax, 
+      crossbasis(f_data$tmean, 
                  
                  lag=laglag,
                  argvar=list(fun=varfun,
-                             knots=quantile(f_data$tmax,varper/100,na.rm=T),
-                             Bound = range(f_data$tmax, na.rm = T)),
+                             knots=quantile(f_data$tmean,varper/100,na.rm=T),
+                             Bound = range(f_data$tmean, na.rm = T)),
                  arglag=list(fun=varfun,
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
@@ -209,23 +208,23 @@ first_result_list <-
           family = quasipoisson)
     
     # crossreduce for first_stage
-    # reference := mean() ~
+    # reference := mean() ~ 
     f_crossreduce_temp <- 
       crossreduce(f_cb_temp, f_model_temp, 
-                  cen = mean(f_data$tmax,na.rm=T),
+                  cen = mean(f_data$tmean,na.rm=T),
                   by = 0.1)
     
     # first-stage curve
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
-                by=0.1,cen = mean(f_data$tmax,na.rm=T))
+                by=0.1,cen = mean(f_data$tmean,na.rm=T))
     f_MMT <- 
       f_crosspred_temp$allRRfit[which.min(f_crosspred_temp$allRRfit)] %>% names %>% as.numeric
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = f_MMT)
     
-
+    
     list(crossreduce_temp = f_crossreduce_temp,
          crosspred_temp = f_crosspred_temp,
          # qAIC
@@ -251,11 +250,11 @@ first_result_list <-
     
     # crossbasis
     f_cb_WBGT <- 
-      crossbasis(f_data$maxWBGT, 
+      crossbasis(f_data$meanWBGT, 
                  lag=laglag,
                  argvar=list(fun=varfun,
-                             knots=quantile(f_data$maxWBGT,varper/100,na.rm=T),
-                             Bound = range(f_data$maxWBGT, na.rm = T)),
+                             knots=quantile(f_data$meanWBGT,varper/100,na.rm=T),
+                             Bound = range(f_data$meanWBGT, na.rm = T)),
                  arglag=list(fun=varfun,
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
@@ -271,20 +270,20 @@ first_result_list <-
     # reference := mean() ~ 
     f_crossreduce_WBGT <- 
       crossreduce(f_cb_WBGT, f_model_WBGT, 
-                  cen = mean(f_data$maxWBGT,na.rm=T),
+                  cen = mean(f_data$meanWBGT,na.rm=T),
                   by = 0.1)
     
     # first-stage curve
     f_crosspred_WBGT <- 
       crosspred(f_cb_WBGT,f_model_WBGT,
-                by=0.1,cen = mean(f_data$maxWBGT,na.rm=T))
+                by=0.1,cen = mean(f_data$meanWBGT,na.rm=T))
     f_MMW <- 
       f_crosspred_WBGT$allRRfit[which.min(f_crosspred_WBGT$allRRfit)] %>% names %>% as.numeric
     f_crosspred_WBGT <- 
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = f_MMW)
     
-
+    
     list(crossreduce_WBGT = f_crossreduce_WBGT,
          crosspred_WBGT = f_crosspred_WBGT,
          # qAIC
@@ -300,6 +299,8 @@ first_result_list <-
          qAIC_WBGT = map_dbl(first_prepre_WBGT,~{.x$qAIC_WBGT})) %>% 
   select(-first_prepre_WBGT)
 
+
+first_result_list
 
 
 # -------------------------------------------------------------------------
@@ -330,10 +331,8 @@ first_result_list <-
 #     mutate(weight = "simple")
 # ) %>%
 # 
-#   write.csv("R_code/qAIC/qAIC_Jun_Sep.csv",
+#   write.csv("R_code/qAIC/qAIC_mean.csv",
 #             row.names = F)
-
-
 
 
 
@@ -343,6 +342,7 @@ first_result_list <-
 #
 ############################################################################### 
 
+metapredictor_table %>% colnames
 
 # -------------------------------------------------------------------------
 # meta-regression ---------------------------------------------------------
@@ -354,8 +354,8 @@ nationwide_2stage_BLUP <-
   mutate(high_pers = map(data,
                          ~{data.frame(
                            high_pers = paste0("per",seq(90,97.5,2.5)),
-                           tmax_pers = .x$tmax %>% quantile(probs=seq(90,97.5,2.5)/100) %>% round(1),
-                           maxWBGT_pers = .x$maxWBGT %>% quantile(probs=seq(90,97.5,2.5)/100) %>% round(1)
+                           tmean_pers = .x$tmean %>% quantile(probs=seq(90,97.5,2.5)/100) %>% round(1),
+                           meanWBGT_pers = .x$meanWBGT %>% quantile(probs=seq(90,97.5,2.5)/100) %>% round(1)
                          )})) %>% 
   
   ### temp
@@ -381,6 +381,8 @@ nationwide_2stage_BLUP <-
                    control = list(showiter = T, igls.inititer = 10),
                    method = "reml") %>% 
            blup(vcov=T))
+
+
 
 # -------------------------------------------------------------------------
 # Wald test ---------------------------------------------------------------
@@ -441,11 +443,11 @@ nationwide_2stage_BLUP <-
   mutate(bvar_temp = map(data,~{
     
     # basis by percentile
-    predvar_temp <- quantile(.x$tmax,0:1000/1000,na.rm=T) %>% round(1)
+    predvar_temp <- quantile(.x$tmean,0:1000/1000,na.rm=T) %>% round(1)
     argvar_temp <- list(x = predvar_temp, 
                         fun = varfun,
-                        knots = quantile(.x$tmax, varper/100, na.rm = T),
-                        Bound = range(.x$tmax, na.rm = T))
+                        knots = quantile(.x$tmean, varper/100, na.rm = T),
+                        Bound = range(.x$tmean, na.rm = T))
     bvar_temp <- do.call(onebasis, argvar_temp)
     return(bvar_temp)
     
@@ -455,17 +457,17 @@ nationwide_2stage_BLUP <-
   mutate(MMTP = map2_dbl(bvar_temp,nationwide_temp_BLUP,
                          ~{seq(1,99,0.1)[which.min((.x %*% .y$blup)[which(seq(0,100,0.1) == 1):which(seq(0,100,0.1) == 99)])]})) %>% 
   mutate(MMT = map2_dbl(data,MMTP,
-                        ~{quantile(.x$tmax, .y/100, na.rm = T)})) %>% 
+                        ~{quantile(.x$tmean, .y/100, na.rm = T)})) %>% 
   
   ### bvar_WBGT ###
   mutate(bvar_WBGT = map(data,~{
     
     # basis by percentile
-    predvar_WBGT <- quantile(.x$maxWBGT,0:1000/1000,na.rm=T) %>% round(1)
+    predvar_WBGT <- quantile(.x$meanWBGT,0:1000/1000,na.rm=T) %>% round(1)
     argvar_WBGT <- list(x = predvar_WBGT, 
                         fun = varfun,
-                        knots = quantile(.x$maxWBGT, varper/100, na.rm = T),
-                        Bound = range(.x$maxWBGT, na.rm = T))
+                        knots = quantile(.x$meanWBGT, varper/100, na.rm = T),
+                        Bound = range(.x$meanWBGT, na.rm = T))
     bvar_WBGT <- do.call(onebasis, argvar_WBGT)
     return(bvar_WBGT)
     
@@ -475,7 +477,9 @@ nationwide_2stage_BLUP <-
   mutate(MMWP = map2_dbl(bvar_WBGT,nationwide_WBGT_BLUP,
                          ~{seq(1,99,0.1)[which.min((.x %*% .y$blup)[which(seq(0,100,0.1) == 1):which(seq(0,100,0.1) == 99)])]})) %>% 
   mutate(MMW = map2_dbl(data,MMWP,
-                        ~{quantile(.x$maxWBGT, .y/100, na.rm = T)}))
+                        ~{quantile(.x$meanWBGT, .y/100, na.rm = T)}))
+
+nationwide_2stage_BLUP %>% tail
 
 # -------------------------------------------------------------------------
 # crosspred ---------------------------------------------------------------
@@ -521,114 +525,8 @@ nationwide_2stage_BLUP <-
            as.factor %>% fct_relevel(pref_vec))
 
 
-# -------------------------------------------------------------------------
-# visualization
-# -------------------------------------------------------------------------
+nationwide_2stage_BLUP
 
-boldbold <- 1.2
-
-BLUP_temp_curve <-
-  function(p){
-    p_BLUP_temp <-
-      nationwide_2stage_BLUP %>%
-      filter(prefcode == p) %>%
-      select(prefname,MMT,MMTP,crosspred_temp_BLUP) %>%
-      mutate(across(.cols=contains("MM"),
-                    .fns=~{round(.x,1)}))
-    
-    p_BLUP_temp$crosspred_temp_BLUP[[1]] %>%
-      plot(ylim=c(0.95,1.5),
-           cex.axis = boldbold,
-           cex.lab = boldbold,
-           cex.main = boldbold,
-           xlab="Daily maximum temperature (°C)",
-           ylab="Relative Risk",
-           family="sans")
-    title(glue::glue("({p}) {p_BLUP_temp$prefname} (Temperature)"),
-          font.main = 1,
-          cex.main = boldbold,
-          adj = 0,
-          family="sans")
-    # MMT
-    segments(x0=p_BLUP_temp$MMT, y0=0.1, x1=p_BLUP_temp$MMT, y1=1.48,
-             lty="dashed")
-    text(x=p_BLUP_temp$MMT,y=1.49,
-         family="sans",
-         cex = boldbold - 0.2,
-         labels=paste0("MMT = ",p_BLUP_temp$MMT," (",p_BLUP_temp$MMTP,"%)"))
-    
-  }
-
-#
-BLUP_WBGT_curve <-
-  function(p){
-    p_BLUP_WBGT <-
-      nationwide_2stage_BLUP %>%
-      filter(prefcode == p) %>%
-      select(prefname,MMW,MMWP,crosspred_WBGT_BLUP) %>%
-      mutate(across(.cols=contains("MM"),
-                    .fns=~{round(.x,1)}))
-    
-    p_BLUP_WBGT$crosspred_WBGT_BLUP[[1]] %>%
-      plot(ylim=c(0.95,1.5),
-           cex.axis = boldbold,
-           cex.lab = boldbold,
-           cex.main = boldbold,
-           xlab="Daily maximum WBGT (°C)",
-           ylab="Relative Risk",
-           family="sans")
-    title(glue::glue("({p}) {p_BLUP_WBGT$prefname} (WBGT)"),
-          font.main = 1,
-          cex.main = boldbold,
-          adj = 0,
-          family="sans")
-    
-    # MMW
-    segments(x0=p_BLUP_WBGT$MMW, y0=0.1, x1=p_BLUP_WBGT$MMW, y1=1.48,
-             lty="dashed")
-    text(x=p_BLUP_WBGT$MMW,y=1.49,
-         family="sans",
-         cex = boldbold - 0.2,
-         labels=paste0("MMW = ",p_BLUP_WBGT$MMW," (",p_BLUP_WBGT$MMWP,"%)"))
-    
-}
-#
-
-p=34
-BLUP_temp_curve(p)
-BLUP_WBGT_curve(p)
-
-
-# -------------------------------------------------------------------------
-# visualization for BLUP_pref47 -------------------------------------------
-pdf("figure/FigS1_BLUP_heat_mortality_June_Sep.pdf",width=7,height=10)
-
-par(mfrow=c(4,2),
-    mar = c(5,5,4,1),
-    family="sans")
-for(p in 1:47){
-  BLUP_temp_curve(p)
-  BLUP_WBGT_curve(p)
-}
-dev.off()
-
-
-
-###############################################################################
-### outline ###
-# 1. analysis
-## 1-1. pref analysis
-## 1-2. region analysis
-## 1-3. usingWBGT
-###############################################################################
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# analysis ----------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 ##############################################################################
 # 
@@ -646,7 +544,7 @@ RR_highper <-
                              allRRlow = .y$allRRlow,
                              allRRfit = .y$allRRfit,
                              allRRhigh = .y$allRRhigh) %>% 
-                    filter(predvar %in% round(.x$tmax_pers,1)) %>% 
+                    filter(predvar %in% round(.x$tmean_pers,1)) %>% 
                     mutate(high_per = paste0("per",seq(90,97.5,2.5))) %>% 
                     as_tibble()})) %>% 
   mutate(RR_WBGT_highper = 
@@ -655,17 +553,19 @@ RR_highper <-
                              allRRlow = .y$allRRlow,
                              allRRfit = .y$allRRfit,
                              allRRhigh = .y$allRRhigh) %>% 
-                    filter(predvar %in% round(.x$maxWBGT_pers,1)) %>% 
+                    filter(predvar %in% round(.x$meanWBGT_pers,1)) %>% 
                     mutate(high_per = paste0("per",seq(90,97.5,2.5))) %>% 
                     as_tibble()}))
 
+RR_highper$RR_temp_highper[[1]]
 ##############################################################################
 # 
 # [3.regional_results]
 # 
 ###############################################################################
+nationwide_2stage_BLUP$crosspred_temp_BLUP[[1]]$allfit
 # -------------------------------------------------------------------------
-# logRR -------------------------------------------------------------------
+# logRR準備 -----------------------------------------------------------------
 # -------------------------------------------------------------------------
 
 logRR_highper <- 
@@ -677,7 +577,7 @@ logRR_highper <-
                 ~{data.frame(predvar = round(.y$predvar,1),
                              logRR = .y$allfit,
                              logRRvar = .y$allse ^ 2) %>% 
-                    filter(predvar %in% round(.x$tmax_pers,1)) %>% 
+                    filter(predvar %in% round(.x$tmean_pers,1)) %>% 
                     mutate(high_per = paste0("per",seq(90,97.5,2.5))) %>% 
                     as_tibble()})) %>% 
   mutate(logRR_WBGT_highper = 
@@ -685,7 +585,7 @@ logRR_highper <-
                 ~{data.frame(predvar = round(.y$predvar,1),
                              logRR = .y$allfit,
                              logRRvar = .y$allse ^ 2) %>% 
-                    filter(predvar %in% round(.x$maxWBGT_pers,1)) %>% 
+                    filter(predvar %in% round(.x$meanWBGT_pers,1)) %>% 
                     mutate(high_per = paste0("per",seq(90,97.5,2.5))) %>% 
                     as_tibble()}))
 
@@ -706,7 +606,6 @@ logRR_highper <-
                            c(0,1)) %>% 
            as.numeric)
 
-# 
 logRR_highper
 # 2heat * 4pers * 47pref = 376rows
 
@@ -724,8 +623,8 @@ pooled_RRtot <-
         filter(high_per == paste0("per",seq(90,97.5,2.5))[fper],
                heat == fheat)
       
-      # nationwide --------------------------------------------------------------
-      # national resultにはtwo-level random-effect??????
+      # nationwide
+      # national resultにはtwo-level random-effect�?�?
       mixmeta_nationwide <- 
         mixmeta(logRR,
                 logRRvar,
@@ -742,13 +641,13 @@ pooled_RRtot <-
                I2 = mixmeta_nationwide %>% summary() %>% .$i2stat %>% round(1))
       
       
-      # region ------------------------------------------------------------------
+      # region
       region_result <- 
         map_df(1:length(region_vec_level),~{
           
           if (.x %in% c(1,11)) {
             
-            # no meta-analysis for Hokkaido and Okinawa
+            # メタアナしな�?北海道沖�?はlog化しな�?allRRfitなどから取�?
             bind_rows(
               RR_highper %>% 
                 select(prefname,region,RR_temp_highper) %>% 
@@ -771,7 +670,6 @@ pooled_RRtot <-
             
           } else {
             
-            # meta-analysis except for Hokkaido and Okinawa
             f_mixmeta <- 
               mixmeta(logRR ~ 1,
                       logRRvar,
@@ -801,7 +699,7 @@ pooled_RRtot <-
   mutate(region = region %>% as.factor %>% 
            fct_relevel(rev(c(region_vec_level,"Nationwide"))))
 
-pooled_RRtot %>% as.data.frame()
+
 
 ###############################################################################
 # 
@@ -809,10 +707,10 @@ pooled_RRtot %>% as.data.frame()
 # 
 ###############################################################################
 
-RR_usingWBGT_June_Sep <- 
+RR_usingWBGT_mean <- 
   tibble(pers = 1:4) %>% 
   
-  ### mixmeta
+  # mixmeta
   mutate(logRR_mixmeta = map(pers,~{
     mixmeta(logRR ~ heat,
             logRRvar,
@@ -822,13 +720,13 @@ RR_usingWBGT_June_Sep <-
             method = "reml")
   })) %>% 
   
-  ### I2
+  # I2
   mutate(I2 = map_dbl(logRR_mixmeta,~{
     .x %>% summary %>% .$i2stat %>% round(2) %>% 
       return()
   })) %>% 
   
-  ### I2_pre
+  # I2_pre
   mutate(I2_pre = map_dbl(pers,~{
     mixmeta(logRR ~ 1,
             logRRvar,
@@ -840,7 +738,7 @@ RR_usingWBGT_June_Sep <-
       return()
   })) %>% 
   
-  ### usingWBGT
+  # usingWBGT
   mutate(result_mixmeta = map2(pers,logRR_mixmeta,~{
     .y %>% 
       ci.exp %>% 
@@ -848,62 +746,17 @@ RR_usingWBGT_June_Sep <-
       mutate(rowlabel = rownames(.)) %>% 
       filter(rowlabel == "heat") %>% 
       select(Estimate=`exp(Est.)`,L95=`2.5%`,U95=`97.5%`) %>% 
-      mutate(group = "main",
+      mutate(group = "mean",
              vars = paste0("per",seq(90,97.5,2.5))[.x]) %>% 
       # percent change
       mutate(across(.cols=all_of(c("Estimate","L95","U95")),
-                    .fns=function(mimi){(mimi-1)*100})) %>% 
+                    .fns=function(mimi){mimi-1}*100)) %>% 
       as_tibble()
   })) %>% 
   unnest(result_mixmeta) %>% 
   select(-logRR_mixmeta)
 
 
-RR_usingWBGT_June_Sep
-
-# save(RR_usingWBGT_June_Sep,
-#      file="R_code/usingWBGT_data/RR_usingWBGT_June_Sep.R")
-
-
-
-
-
-
-# region-level
-# WBGT ~ 1 / temp ~ 0
-# function_region_errorbarplot <- 
-#   function(fper,ftitle){
-#     
-#     pooled_RRtot %>% 
-#       filter(group != "Nationwide",
-#              high_per == fper) %>% 
-#       mutate(region = region %>% as.factor %>% 
-#                fct_relevel(rev(region_vec_level)),
-#              heat = heat %>% as.factor) %>% 
-#       ggplot(aes(x=region,
-#                  y=Estimate,
-#                  ymin=L95,
-#                  ymax=U95,
-#                  color=heat)) + 
-#       geom_errorbar(position = position_dodge(width = 0.5),
-#                     width = 0,
-#                     size = 1.25) + 
-#       geom_point(position = position_dodge(width = 0.5),
-#                  size = 2) + 
-#       geom_hline(yintercept = 1, linetype="dotted") + 
-#       # scale_y_continuous(limits = if(fmeasure == "AF"){AF_region_range}else{RR_region_range}) + 
-#       coord_flip() +
-#       scale_color_brewer(palette = "Set1") + 
-#       labs(x="",
-#            y="Relative Risk",
-#            title=ftitle) + 
-#       theme_bw() + 
-#       theme(legend.title=element_blank(),
-#             text=element_text(size=12,family="sans"))
-#     
-#   }
-# 
-# # WBGT ~ 1 / temp ~ 0
-# function_region_errorbarplot("per95","title")
-# dev.off()
-# 
+RR_usingWBGT_mean
+# save(RR_usingWBGT_mean,
+#      file="R_code/usingWBGT_data/RR_usingWBGT_mean.R")

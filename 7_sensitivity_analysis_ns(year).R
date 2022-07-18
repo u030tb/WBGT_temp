@@ -1,7 +1,6 @@
 # 7_sensitivity_analysis_ns(year).R
-# source("R_code/1_prefectural_data.R")
+source("R_code/1_prefectural_data.R")
 
-# 本章の成果物
 regional_division
 pref_list
 metapredictor_table
@@ -17,7 +16,6 @@ region_vec_level
 ### set parameters for first-stage analysis ---------------------------------
 # heat-response relationship
 varfun <- "ns"
-# 70-95とかはやらない方がいいかな、最高tempが下りがち
 varper <- c(50, 90)
 
 # lag-response relationship
@@ -38,10 +36,10 @@ first_result_list <-
   ### temp ###
   mutate(first_prepre_temp = map(data, ~{
     
-    # data ------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------
+    # crossbasis
     f_cb_temp <- 
       crossbasis(f_data$tmax, 
                  
@@ -53,7 +51,7 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------
+    # statmodel
     f_model_temp <- 
       glm(all ~ f_cb_temp + ns(year,knots=2014.5) + dow + 
             ns(dos,knots=quantile(dos_vec,
@@ -61,14 +59,14 @@ first_result_list <-
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage -------------------------------------
-    # reference := mean() ~ (過去の人為的活動由来の死者数研究
+    # crossreduce for first_stage
+    # reference := mean() ~
     f_crossreduce_temp <- 
       crossreduce(f_cb_temp, f_model_temp, 
                   cen = mean(f_data$tmax,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -----------------------------------------------
+    # first-stage curve
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = mean(f_data$tmax,na.rm=T))
@@ -78,9 +76,11 @@ first_result_list <-
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = f_MMT)
     
-    # -------------------------------------------------------------------------
+
     list(crossreduce_temp = f_crossreduce_temp,
-         crosspred_temp = f_crosspred_temp) %>% 
+         crosspred_temp = f_crosspred_temp,
+         # qAIC
+         qAIC_temp = fqaic(f_model_temp)) %>% 
       return()
     
   })) %>% 
@@ -88,7 +88,8 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% coef}),
          first_vcov_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% vcov}),
-         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp})) %>% 
+         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp}),
+         qAIC_temp = map_dbl(first_prepre_temp,~{.x$qAIC_temp})) %>% 
   select(-first_prepre_temp) %>% 
   
   
@@ -96,10 +97,10 @@ first_result_list <-
   mutate(first_prepre_WBGT = map(data, ~{
     
     
-    # data ------------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------------
+    # crossbasis
     f_cb_WBGT <- 
       crossbasis(f_data$maxWBGT, 
                  lag=laglag,
@@ -110,21 +111,21 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------------
+    # statmodel
     f_model_WBGT <- 
       glm(all ~ f_cb_WBGT + ns(year,knots=2014.5) + dow + 
             ns(dos,knots=quantile(dos_vec,seq(df_ns_dos)/(df_ns_dos+1))):factor(year),
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage ---------------------------------------------
-    # reference := mean() ~ (過去の人為的活動由来の死者数研究
+    # crossreduce for first_stage
+    # reference := mean() ~ 
     f_crossreduce_WBGT <- 
       crossreduce(f_cb_WBGT, f_model_WBGT, 
                   cen = mean(f_data$maxWBGT,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -------------------------------------------------------
+    # first-stage curve
     f_crosspred_WBGT <- 
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = mean(f_data$maxWBGT,na.rm=T))
@@ -134,9 +135,11 @@ first_result_list <-
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = f_MMW)
     
-    # -------------------------------------------------------------------------
+
     list(crossreduce_WBGT = f_crossreduce_WBGT,
-         crosspred_WBGT = f_crosspred_WBGT) %>% 
+         crosspred_WBGT = f_crosspred_WBGT,
+         # qAIC
+         qAIC_WBGT = fqaic(f_model_WBGT)) %>% 
       return()
     
   })) %>% 
@@ -144,8 +147,52 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% coef}),
          first_vcov_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% vcov}),
-         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT})) %>% 
+         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT}),
+         qAIC_WBGT = map_dbl(first_prepre_WBGT,~{.x$qAIC_WBGT})) %>% 
   select(-first_prepre_WBGT)
+
+
+
+# -------------------------------------------------------------------------
+# QAIC 
+# -------------------------------------------------------------------------
+
+# bind_rows(
+# 
+#   # pref-level qAICs were aggregated with weight (pref-level sum of total deaths)
+#   first_result_list %>%
+#     select(prefname, qAIC_temp, qAIC_WBGT) %>%
+#     mutate(weight_total_all = map_dbl(1:47,function(x){
+#       first_result_list$data[[x]]$all %>% sum
+#     })) %>%
+#     mutate(weight_sum = sum(weight_total_all)) %>%
+#     mutate(weight_frac = weight_total_all / weight_sum) %>%
+#     mutate(qAIC_temp_weight = qAIC_temp * weight_frac,
+#            qAIC_WBGT_weight = qAIC_WBGT * weight_frac) %>%
+#     summarize(qAIC_temp = sum(qAIC_temp_weight),
+#               qAIC_WBGT = sum(qAIC_WBGT_weight)) %>%
+#     mutate(weight = "case_weight"),
+# 
+#   # simple mean
+#   first_result_list %>%
+#     select(prefname, qAIC_temp, qAIC_WBGT) %>%
+#     summarize(qAIC_temp = mean(qAIC_temp),
+#               qAIC_WBGT = mean(qAIC_WBGT)) %>%
+#     mutate(weight = "simple")
+# ) %>%
+# 
+#   write.csv("R_code/qAIC/qAIC_nsyear.csv",
+#             row.names = F)
+
+
+
+
+
+
+
+
+
+
 
 
 ###############################################################################
@@ -206,7 +253,7 @@ nationwide_2stage_BLUP <-
   ### bvar_temp ###
   mutate(bvar_temp = map(data,~{
     
-    # percentileごとに基底を得る
+    # basis by percentile
     predvar_temp <- quantile(.x$tmax,0:1000/1000,na.rm=T) %>% round(1)
     argvar_temp <- list(x = predvar_temp, 
                         fun = varfun,
@@ -226,7 +273,7 @@ nationwide_2stage_BLUP <-
   ### bvar_WBGT ###
   mutate(bvar_WBGT = map(data,~{
     
-    # percentileごとに基底を得る
+    # basis by percentile
     predvar_WBGT <- quantile(.x$maxWBGT,0:1000/1000,na.rm=T) %>% round(1)
     argvar_WBGT <- list(x = predvar_WBGT, 
                         fun = varfun,
@@ -245,9 +292,8 @@ nationwide_2stage_BLUP <-
 
 
 # -------------------------------------------------------------------------
-# crosspred作成 -------------------------------------------------------------
+# crosspred ---------------------------------------------------------------
 # -------------------------------------------------------------------------
-# crosspredを作成するには4つ変数が必要なので別途作成
 nationwide_2stage_BLUP <- 
   nationwide_2stage_BLUP %>% 
   ### temp ###
@@ -327,7 +373,7 @@ RR_highper <-
 ###############################################################################
 nationwide_2stage_BLUP$crosspred_temp_BLUP[[1]]$allfit
 # -------------------------------------------------------------------------
-# logRR準備 -----------------------------------------------------------------
+# logRR -------------------------------------------------------------------
 # -------------------------------------------------------------------------
 
 logRR_highper <- 
@@ -377,14 +423,14 @@ pooled_RRtot <-
   map_df(0:1,function(fheat){
     map(1:4,function(fper){
       
-      # percentile --------------------------------------------------------------
+      # percentile
       f_logRR_highper <- 
         logRR_highper %>% 
         filter(high_per == paste0("per",seq(90,97.5,2.5))[fper],
                heat == fheat)
       
-      # nationwide --------------------------------------------------------------
-      # national resultにはtwo-level random-effect必須
+      # nationwide
+      # two-level random-effect meta-analysis for national result
       mixmeta_nationwide <- 
         mixmeta(logRR,
                 logRRvar,
@@ -401,13 +447,13 @@ pooled_RRtot <-
                I2 = mixmeta_nationwide %>% summary() %>% .$i2stat %>% round(1))
       
       
-      # region ------------------------------------------------------------------
+      # region
       region_result <- 
         map_df(1:length(region_vec_level),~{
           
           if (.x %in% c(1,11)) {
             
-            # メタアナしない北海道沖縄はlog化しないallRRfitなどから取得
+            # no meta-analysis for Hokkaido and Okinawa 
             bind_rows(
               RR_highper %>% 
                 select(prefname,region,RR_temp_highper) %>% 
@@ -430,7 +476,7 @@ pooled_RRtot <-
             
           } else {
             
-            # 北海道沖縄以外のはlog化してメタアナ
+            # meta-analysis except for Hokkaido and Okinawa
             f_mixmeta <- 
               mixmeta(logRR ~ 1,
                       logRRvar,
@@ -467,57 +513,60 @@ pooled_RRtot <-
 # 
 ###############################################################################
 
-RR_usingWBGT <- 
+RR_usingWBGT_nsyear <- 
   tibble(pers = 1:4) %>% 
   
-  # mixmeta -----------------------------------------------------------------
-mutate(logRR_mixmeta = map(pers,~{
-  mixmeta(logRR ~ heat,
-          logRRvar,
-          data = logRR_highper %>% 
-            filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
-          random= ~ 1|region/prefname,
-          method = "reml")
-})) %>% 
+  ### mixmeta 
+  mutate(logRR_mixmeta = map(pers,~{
+    mixmeta(logRR ~ heat,
+            logRRvar,
+            data = logRR_highper %>% 
+              filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
+            random= ~ 1|region/prefname,
+            method = "reml")
+  })) %>% 
   
-  # I2 ----------------------------------------------------------------------
-mutate(I2 = map_dbl(logRR_mixmeta,~{
-  .x %>% summary %>% .$i2stat %>% round(2) %>% 
-    return()
-})) %>% 
+  ### I2 
+  mutate(I2 = map_dbl(logRR_mixmeta,~{
+    .x %>% summary %>% .$i2stat %>% round(2) %>% 
+      return()
+  })) %>% 
   
-  # I2_pre ----------------------------------------------------------------------
-mutate(I2_pre = map_dbl(pers,~{
-  mixmeta(logRR ~ 1,
-          logRRvar,
-          data = logRR_highper %>% 
-            filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
-          random= ~ 1|region/prefname,
-          method = "reml") %>% 
-    summary %>% .$i2stat %>% round(2) %>% 
-    return()
-})) %>% 
+  ### I2_pre 
+  mutate(I2_pre = map_dbl(pers,~{
+    mixmeta(logRR ~ 1,
+            logRRvar,
+            data = logRR_highper %>% 
+              filter(high_per == paste0("per",seq(90,97.5,2.5))[.x]),
+            random= ~ 1|region/prefname,
+            method = "reml") %>% 
+      summary %>% .$i2stat %>% round(2) %>% 
+      return()
+  })) %>% 
   
-  # usingWBGT ---------------------------------------------------------------
-mutate(result_mixmeta = map2(pers,logRR_mixmeta,~{
-  .y %>% 
-    ci.exp %>% 
-    as.data.frame() %>% 
-    mutate(rowlabel = rownames(.)) %>% 
-    filter(rowlabel == "heat") %>% 
-    select(Estimate=`exp(Est.)`,L95=`2.5%`,U95=`97.5%`) %>% 
-    mutate(group = "main",
-           vars = paste0("per",seq(90,97.5,2.5))[.x]) %>% 
-    # percent change
-    mutate(across(.cols=all_of(c("Estimate","L95","U95")),
-                  .fns=function(mimi){(mimi-1)*100})) %>% 
-    as_tibble()
-})) %>% 
+  ### usingWBGT 
+  mutate(result_mixmeta = map2(pers,logRR_mixmeta,~{
+    .y %>% 
+      ci.exp %>% 
+      as.data.frame() %>% 
+      mutate(rowlabel = rownames(.)) %>% 
+      filter(rowlabel == "heat") %>% 
+      select(Estimate=`exp(Est.)`,L95=`2.5%`,U95=`97.5%`) %>% 
+      mutate(group = "main",
+             vars = paste0("per",seq(90,97.5,2.5))[.x]) %>% 
+      # percent change
+      mutate(across(.cols=all_of(c("Estimate","L95","U95")),
+                    .fns=function(mimi){(mimi-1)*100})) %>% 
+      as_tibble()
+  })) %>% 
   unnest(result_mixmeta) %>% 
   select(-logRR_mixmeta)
 
 
-RR_usingWBGT
+RR_usingWBGT_nsyear
 
+# save(RR_usingWBGT_nsyear,
+#      file="R_code/usingWBGT_data/RR_usingWBGT_nsyear.R")
 
 # -------------------------------------------------------------------------
+

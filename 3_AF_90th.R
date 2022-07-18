@@ -52,7 +52,7 @@ pref_temp_AF_90th <-
       mutate(over_90th = data$tmax >= quantile(data$tmax,cutoff_per))
     
     # basis?쐬 -----------------------------------------------------------------
-    # ?ߋ??쐬crosspred?̓p?[?Z???g???Ƃ?basis???????��ĂȂ??B
+    # ?ߋ??쐬crosspred?̓p?[?Z???g???Ƃ?basis???????��ĂȂ??B
     # ?????Ŏ??n???f?[?^?ɑ΂??Ă?basis???ēx?\?z?????K?v???????B
     p_argvar_temp <- 
       list(fun = varfun,
@@ -122,7 +122,7 @@ pref_WBGT_AF_90th <-
     
     
     # basis?쐬 -----------------------------------------------------------------
-    # ?ߋ??쐬crosspred?̓p?[?Z???g???Ƃ?basis???????��ĂȂ??B
+    # ?ߋ??쐬crosspred?̓p?[?Z???g???Ƃ?basis???????��ĂȂ??B
     # ?????Ŏ??n???f?[?^?ɑ΂??Ă?basis???ēx?\?z?????K?v???????B
     p_argvar_WBGT <- 
       list(fun = varfun,
@@ -249,13 +249,13 @@ table_WBGT_AF_90th
 
 pooled_AF_90th <-
   map_df(c("temperature","WBGT"),function(fheat){
-
+    
     # temperature or WBGT -----------------------------------------------------
     f_data <-
       bind_rows(table_temp_AF_90th %>% mutate(heat = "temperature"),
                 table_WBGT_AF_90th %>% mutate(heat = "WBGT")) %>%
       filter(heat == fheat)
-
+    
     # nationwide --------------------------------------------------------------
     # national result??two-level random-effect?K?{?ł??傤
     mixmeta_nationwide <-
@@ -264,7 +264,7 @@ pooled_AF_90th <-
               random= ~ 1|region/prefname,
               data = f_data,
               method = "reml")
-
+    
     nationwide_result <-
       mixmeta_nationwide %>%
       ci.lin() %>%
@@ -272,11 +272,11 @@ pooled_AF_90th <-
       select(Estimate,L95=`2.5%`,U95=`97.5%`) %>%
       mutate(region = "Nationwide",
              I2 = mixmeta_nationwide %>% summary() %>% .$i2stat %>% round(1))
-
+    
     # region result -----------------------------------------------------------
     region_result <-
       map_df(1:length(region_vec_level),~{
-
+        
         if (.x %in% c(1,11)) {
           f_data %>%
             filter(region == region_vec_level[.x]) %>%
@@ -291,7 +291,7 @@ pooled_AF_90th <-
                     AF_var,
                     data = f_data %>% filter(region == region_vec_level[.x]),
                     method = "reml")
-
+          
           f_mixmeta %>%
             ci.lin() %>%
             as_tibble() %>%
@@ -300,13 +300,13 @@ pooled_AF_90th <-
                    I2 = f_mixmeta %>% summary() %>% .$i2stat %>% round(1))
         }
       })
-
+    
     bind_rows(nationwide_result,
               region_result) %>%
       mutate(heat = fheat) %>%
       mutate(group = ifelse(region == "Nationwide","Nationwide","region")) %>%
       return()
-
+    
   }) %>%
   mutate(region = region %>% as.factor %>%
            fct_relevel(rev(c(region_vec_level,"Nationwide"))))

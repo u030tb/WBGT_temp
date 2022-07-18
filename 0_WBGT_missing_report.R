@@ -1,7 +1,6 @@
-setwd("C:/Users/u030t/OneDrive/ƒfƒXƒNƒgƒbƒv/research proposal/temp_WBGT")
 source("R_code/1_prefectural_data.R")
 
-# ¬‰Ê•¨
+# æˆæœç‰©
 regional_division
 pref_list
 metapredictor_table
@@ -13,7 +12,7 @@ region_vec_level
 # hourly_WBGT -------------------------------------------------------------
 # -------------------------------------------------------------------------
 
-# prefecture‚²‚Æ‚Ìhourly_data
+# prefectureã”ã¨ã®hourly_data
 load("data/WBGT_data/pref_hourly_WBGT.RData")
 
 # from list to table
@@ -30,7 +29,8 @@ nationwide_hourly_WBGT <-
   mutate(year = year(date),
          month = month(date)) %>% 
   filter(month %in% months)
-  
+
+pacman::p_load(naniar)
 
 # missing_rate 
 missing_data <- 
@@ -48,16 +48,16 @@ missing_data %>%
   filter(missing_rate != "0%")
 
 
-# ‹CÛ’¡‹C‰·‚Ì‰ß‹ƒf[ƒ^‚Å‚Ì‹ß—×‚Ì“ss‚©‚ç‘I‘ğ‚·‚é‚Æ‚¢‚¤‚±‚Æ‚ÅB
-# May-November‚È‚ç‚±‚Ì8Œ§
-# •Ÿ“‡   ~ •Ÿ“‡‚©‚ç—Àì(36066)     - Fukushima ~ Yanagawa
-# é‹Ê   ~ ‚³‚¢‚½‚Ü‚©‚ç‰z’J(43256) - Saitama ~ Koshigaya
-# _“Şì ~ ‰¡•l‚©‚çŠC˜V–¼(46091)   - Yokohama ~ Ebina
-# ˆ¤’m   ~ –¼ŒÃ‰®‚©‚ç‘å•{(51216)   - Nagoya ~ Obu
-# Od   ~ ’Ã‚©‚çl“ús(53061)     - Tsu ~ Yokkaichi
-# ‚’m   ~ ‚’m‚©‚çŒã–Æ(74187)     - Kochi ~ Gomen
-# •Ÿ‰ª   ~ •Ÿ‰ª‚©‚ç‘¾É•{(82191)   - Fukuoka ~ Dazai
-# ²‰ê   ~ ²‰ê‚©‚ç”’Î(85166)     - Saga ~ Shiraishi
+# æ°—è±¡åºæ°—æ¸©ã®éå»ãƒ‡ãƒ¼ã‚¿ã§ã®è¿‘éš£ã®éƒ½å¸‚ã‹ã‚‰é¸æŠã™ã‚‹ã¨ã„ã†ã“ã¨ã§ã€‚
+# May-Novemberãªã‚‰ã“ã®8çœŒ
+# ç¦å³¶   ~ ç¦å³¶ã‹ã‚‰æ¢å·(36066)     - Fukushima ~ Yanagawa
+# åŸ¼ç‰   ~ ã•ã„ãŸã¾ã‹ã‚‰è¶Šè°·(43256) - Saitama ~ Koshigaya
+# ç¥å¥ˆå· ~ æ¨ªæµœã‹ã‚‰æµ·è€å(46091)   - Yokohama ~ Ebina
+# æ„›çŸ¥   ~ åå¤å±‹ã‹ã‚‰å¤§åºœ(51216)   - Nagoya ~ Obu
+# ä¸‰é‡   ~ æ´¥ã‹ã‚‰å››æ—¥å¸‚(53061)     - Tsu ~ Yokkaichi
+# é«˜çŸ¥   ~ é«˜çŸ¥ã‹ã‚‰å¾Œå…(74187)     - Kochi ~ Gomen
+# ç¦å²¡   ~ ç¦å²¡ã‹ã‚‰å¤ªå®°åºœ(82191)   - Fukuoka ~ Dazai
+# ä½è³€   ~ ä½è³€ã‹ã‚‰ç™½çŸ³(85166)     - Saga ~ Shiraishi
 
 missing_data[missing_data$prefname == "Fukushima","proxy_spot"] = "Yanagawa"
 missing_data[missing_data$prefname == "Saitama",  "proxy_spot"] = "Koshigaya"
@@ -112,10 +112,6 @@ WBGT_missing_report <-
 WBGT_missing_report
 
 # save --------------------------------------------------------------------
-setwd("C:/Users/u030t/OneDrive/ƒfƒXƒNƒgƒbƒv/research proposal/temp_WBGT")
 gtsave(WBGT_missing_report,
        "figure/TableS1_WBGT_missing_report.pdf",
        zoom=0.7)
-
-
-

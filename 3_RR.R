@@ -1,4 +1,3 @@
-# setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 # source("R_code/1_prefectural_data.R")
 # source("R_code/2_prefectural_BLUP.R")
 
@@ -33,7 +32,7 @@ nationwide_2stage_BLUP
 ##############################################################################
 
 RR_highper <- 
-
+  
   nationwide_2stage_BLUP %>% 
   select(prefcode,prefname,region,high_pers,contains("crosspred")) %>% 
   mutate(RR_temp_highper = 
@@ -63,7 +62,7 @@ RR_highper$RR_temp_highper[[1]]
 ###############################################################################
 nationwide_2stage_BLUP$crosspred_temp_BLUP[[1]]$allfit
 # -------------------------------------------------------------------------
-# logRR準備 -----------------------------------------------------------------
+# logRR -------------------------------------------------------------------
 # -------------------------------------------------------------------------
 
 logRR_highper <- 
@@ -104,7 +103,6 @@ logRR_highper <-
                            c(0,1)) %>% 
            as.numeric)
 
-# 成果物
 logRR_highper
 # 2heat * 4pers * 47pref = 376rows
 
@@ -123,7 +121,7 @@ pooled_RRtot <-
                heat == fheat)
       
       # nationwide --------------------------------------------------------------
-      # national resultにはtwo-level random-effect必須
+      # national result縺ｫ縺ｯtwo-level random-effect蠢?鬆?
       mixmeta_nationwide <- 
         mixmeta(logRR,
                 logRRvar,
@@ -146,7 +144,7 @@ pooled_RRtot <-
           
           if (.x %in% c(1,11)) {
             
-            # メタアナしない北海道沖縄はlog化しないallRRfitなどから取得
+            # 繝｡繧ｿ繧｢繝翫＠縺ｪ縺?蛹玲ｵｷ驕捺ｲ也ｸ?縺ｯlog蛹悶＠縺ｪ縺?allRRfit縺ｪ縺ｩ縺九ｉ蜿門ｾ?
             bind_rows(
               RR_highper %>% 
                 select(prefname,region,RR_temp_highper) %>% 
@@ -169,7 +167,7 @@ pooled_RRtot <-
             
           } else {
             
-            # 北海道沖縄以外のはlog化してメタアナ
+            # 蛹玲ｵｷ驕捺ｲ也ｸ?莉･螟悶?ｮ縺ｯlog蛹悶＠縺ｦ繝｡繧ｿ繧｢繝?
             f_mixmeta <- 
               mixmeta(logRR ~ 1,
                       logRRvar,
@@ -210,7 +208,7 @@ pooled_RRtot <-
 RR_usingWBGT <- 
   tibble(pers = 1:4) %>% 
   
-  # mixmeta -----------------------------------------------------------------
+  # mixmeta
   mutate(logRR_mixmeta = map(pers,~{
     mixmeta(logRR ~ heat,
             logRRvar,
@@ -220,13 +218,13 @@ RR_usingWBGT <-
             method = "reml")
   })) %>% 
   
-  # I2 ----------------------------------------------------------------------
+  # I2
   mutate(I2 = map_dbl(logRR_mixmeta,~{
     .x %>% summary %>% .$i2stat %>% round(2) %>% 
       return()
   })) %>% 
   
-  # I2_pre ----------------------------------------------------------------------
+  # I2_pre
   mutate(I2_pre = map_dbl(pers,~{
     mixmeta(logRR ~ 1,
             logRRvar,
@@ -238,7 +236,7 @@ RR_usingWBGT <-
       return()
   })) %>% 
   
-  # usingWBGT ---------------------------------------------------------------
+  # usingWBGT
   mutate(result_mixmeta = map2(pers,logRR_mixmeta,~{
     .y %>% 
       ci.exp %>% 
@@ -250,16 +248,14 @@ RR_usingWBGT <-
              vars = paste0("per",seq(90,97.5,2.5))[.x]) %>% 
       # percent change
       mutate(across(.cols=all_of(c("Estimate","L95","U95")),
-                    .fns=function(mimi){mimi-1})) %>% 
+                    .fns=function(mimi){mimi-1}*100)) %>% 
       as_tibble()
   })) %>% 
   unnest(result_mixmeta) %>% 
   select(-logRR_mixmeta)
-  
-  
+
+
 RR_usingWBGT
 
 # save(RR_usingWBGT,
 #      file="R_code/usingWBGT_data/RR_usingWBGT.R")
-
-

@@ -1,7 +1,5 @@
-# setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 source("R_code/1_prefectural_data.R")
 
-# 本章の成果物
 regional_division
 pref_list
 metapredictor_table
@@ -37,10 +35,10 @@ first_result_list <-
   ### temp ###
   mutate(first_prepre_temp = map(data, ~{
     
-    # data ------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------
+    # crossbasis
     f_cb_temp <- 
       crossbasis(f_data$tmax, 
                  
@@ -52,21 +50,21 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------
+    # statmodel
     f_model_temp <- 
       glm(all ~ f_cb_temp + dow + year + 
             ns(dos,knots=quantile(dos_vec,probs=c(1/3,2/3))):factor(year),
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage -------------------------------------
-    # reference := mean() ~ (過去の人為的活動由来の死者数研究
+    # crossreduce for first_stage
+    # reference := mean() ~ 
     f_crossreduce_temp <- 
       crossreduce(f_cb_temp, f_model_temp, 
                   cen = mean(f_data$tmax,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -----------------------------------------------
+    # first-stage curve
     f_crosspred_temp <- 
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = mean(f_data$tmax,na.rm=T))
@@ -76,9 +74,11 @@ first_result_list <-
       crosspred(f_cb_temp,f_model_temp,
                 by=0.1,cen = f_MMT)
     
-    # -------------------------------------------------------------------------
+
     list(crossreduce_temp = f_crossreduce_temp,
-         crosspred_temp = f_crosspred_temp) %>% 
+         crosspred_temp = f_crosspred_temp,
+         # qAIC
+         qAIC_temp = fqaic(f_model_temp)) %>% 
       return()
     
   })) %>% 
@@ -86,7 +86,8 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% coef}),
          first_vcov_temp = map(first_prepre_temp,~{.x$crossreduce_temp %>% vcov}),
-         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp})) %>% 
+         crosspred_temp = map(first_prepre_temp,~{.x$crosspred_temp}),
+         qAIC_temp = map_dbl(first_prepre_temp,~{.x$qAIC_temp})) %>% 
   select(-first_prepre_temp) %>% 
   
   
@@ -94,10 +95,10 @@ first_result_list <-
   mutate(first_prepre_WBGT = map(data, ~{
     
     
-    # data ------------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------------
+    # crossbasis
     f_cb_WBGT <- 
       crossbasis(f_data$maxWBGT, 
                  lag=laglag,
@@ -108,21 +109,21 @@ first_result_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------------
+    # statmodel
     f_model_WBGT <- 
       glm(all ~ f_cb_WBGT + dow + year + 
             ns(dos,knots=quantile(dos_vec,probs=c(1/3,2/3))):factor(year),
           data = f_data, 
           family = quasipoisson)
     
-    # crossreduce for first_stage ---------------------------------------------
-    # reference := mean() ~ (過去の人為的活動由来の死者数研究
+    # crossreduce for first_stage
+    # reference := mean() ~ 
     f_crossreduce_WBGT <- 
       crossreduce(f_cb_WBGT, f_model_WBGT, 
                   cen = mean(f_data$maxWBGT,na.rm=T),
                   by = 0.1)
     
-    # first-stage curve -------------------------------------------------------
+    # first-stage curve
     f_crosspred_WBGT <- 
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = mean(f_data$maxWBGT,na.rm=T))
@@ -132,9 +133,11 @@ first_result_list <-
       crosspred(f_cb_WBGT,f_model_WBGT,
                 by=0.1,cen = f_MMW)
     
-    # -------------------------------------------------------------------------
+
     list(crossreduce_WBGT = f_crossreduce_WBGT,
-         crosspred_WBGT = f_crosspred_WBGT) %>% 
+         crosspred_WBGT = f_crosspred_WBGT,
+         # qAIC
+         qAIC_WBGT = fqaic(f_model_WBGT)) %>% 
       return()
     
   })) %>% 
@@ -142,11 +145,12 @@ first_result_list <-
   # coef & vcov of reduced parameters
   mutate(first_coef_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% coef}),
          first_vcov_WBGT = map(first_prepre_WBGT,~{.x$crossreduce_WBGT %>% vcov}),
-         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT})) %>% 
+         crosspred_WBGT = map(first_prepre_WBGT,~{.x$crosspred_WBGT}),
+         qAIC_WBGT = map_dbl(first_prepre_WBGT,~{.x$qAIC_WBGT})) %>% 
   select(-first_prepre_WBGT)
 
 
-# 本章の成果物
+# 
 first_result_list
 
 ###############################################################################
@@ -208,7 +212,7 @@ nationwide_2stage_BLUP <-
   ### bvar_temp ###
   mutate(bvar_temp = map(data,~{
     
-    # percentileごとに基底を得る
+    # basis by percentile
     predvar_temp <- quantile(.x$tmax,0:1000/1000,na.rm=T) %>% round(1)
     argvar_temp <- list(x = predvar_temp, 
                         fun = varfun,
@@ -228,7 +232,7 @@ nationwide_2stage_BLUP <-
   ### bvar_WBGT ###
   mutate(bvar_WBGT = map(data,~{
     
-    # percentileごとに基底を得る
+    # basis by percentile
     predvar_WBGT <- quantile(.x$maxWBGT,0:1000/1000,na.rm=T) %>% round(1)
     argvar_WBGT <- list(x = predvar_WBGT, 
                         fun = varfun,
@@ -245,7 +249,7 @@ nationwide_2stage_BLUP <-
   mutate(MMW = map2_dbl(data,MMWP,
                         ~{quantile(.x$maxWBGT, .y/100, na.rm = T)}))
 
-# MMT and MMPの確認
+# MMT and MMP
 nationwide_2stage_BLUP %>% select(contains("MM"))
 
 ###############################################################################
@@ -263,10 +267,10 @@ first_recentering_list <-
   ### temp ###
   mutate(recentered_crosspred_temp = map2(data,MMT, ~{
     
-    # data ------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------
+    # crossbasis
     f_cb_temp <- 
       crossbasis(f_data$tmax, 
                  
@@ -278,7 +282,7 @@ first_recentering_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------
+    # statmodel
     f_model_temp <- 
       glm(all ~ f_cb_temp + dow + 
             ns(dos,knots=quantile(dos_vec,probs=c(1/3,2/3))):factor(year) + 
@@ -286,38 +290,41 @@ first_recentering_list <-
           data = f_data, 
           family = quasipoisson)
     
-    # -------------------------------------------------------------------------
+
     f_crosspred_temp = 
       crosspred(f_cb_temp,
                 f_model_temp,
                 cen=.y,
                 by=0.1)
-    # -------------------------------------------------------------------------
-    # AFにはfirst-stage reduced coef&vcovが必要
+
+    # AF from first-stage reduced coef&vcov
     f_crossreduce_temp = 
       crossreduce(f_cb_temp, 
                   f_model_temp, 
                   cen = .y,
                   by = 0.1)
     
-    # -------------------------------------------------------------------------
+
     list(crosspred_temp = f_crosspred_temp,
-         crossreduce_temp = f_crossreduce_temp) %>% 
+         crossreduce_temp = f_crossreduce_temp,
+         # qAIC
+         qAIC_temp = fqaic(f_model_temp)) %>% 
       return()
     
   })) %>% 
   
   mutate(crosspred_temp = map(recentered_crosspred_temp,~{.x$crosspred_temp}),
-         crossreduce_temp = map(recentered_crosspred_temp,~{.x$crossreduce_temp})) %>% 
+         crossreduce_temp = map(recentered_crosspred_temp,~{.x$crossreduce_temp}),
+         qAIC_temp = map_dbl(recentered_crosspred_temp,~{.x$qAIC_temp})) %>% 
   select(-recentered_crosspred_temp) %>%
   
   ### WBGT ###
   mutate(recentered_crosspred_WBGT = map2(data,MMW, ~{
     
-    # data ------------------------------------------------------------------
+    # data
     f_data = .x
     
-    # crossbasis ------------------------------------------------------------
+    # crossbasis
     f_cb_WBGT <- 
       crossbasis(f_data$maxWBGT, 
                  lag=laglag,
@@ -328,7 +335,7 @@ first_recentering_list <-
                              knots=logknots(laglag, lagnk)),
                  group = f_data$year)
     
-    # statmodel -------------------------------------------------------------
+    # statmodel
     f_model_WBGT <- 
       glm(all ~ f_cb_WBGT + dow + 
             ns(dos,knots=quantile(dos_vec,probs=c(1/3,2/3))):factor(year) + 
@@ -336,37 +343,73 @@ first_recentering_list <-
           data = f_data, 
           family = quasipoisson)
     
-    # -------------------------------------------------------------------------
+
     f_crosspred_WBGT = 
       crosspred(f_cb_WBGT,
                 f_model_WBGT,
                 cen=.y,
                 by=0.1)
     
-    # -------------------------------------------------------------------------
-    # AFにはfirst-stage reduced coef&vcovが必要
+
+    # AF from first-stage reduced coef&vcov
     f_crossreduce_WBGT = 
       crossreduce(f_cb_WBGT, 
                   f_model_WBGT, 
                   cen = .y,
                   by = 0.1)
     
-    # -------------------------------------------------------------------------
+
     list(crosspred_WBGT = f_crosspred_WBGT,
-         crossreduce_WBGT = f_crossreduce_WBGT) %>% 
+         crossreduce_WBGT = f_crossreduce_WBGT,
+         # qAIC
+         qAIC_WBGT = fqaic(f_model_WBGT)) %>% 
       return()
     
   })) %>% 
   
   mutate(crosspred_WBGT = map(recentered_crosspred_WBGT,~{.x$crosspred_WBGT}),
-         crossreduce_WBGT = map(recentered_crosspred_WBGT,~{.x$crossreduce_WBGT})) %>% 
+         crossreduce_WBGT = map(recentered_crosspred_WBGT,~{.x$crossreduce_WBGT}),
+         qAIC_WBGT = map_dbl(recentered_crosspred_WBGT,~{.x$qAIC_WBGT})) %>% 
   select(-recentered_crosspred_WBGT)
+
+
 
 first_recentering_list
 first_recentering_list$crosspred_temp[[4]] %>% plot("overall")
 
-# 本章の成果物
+# 
 first_recentering_list
+
+# -------------------------------------------------------------------------
+# qAIC
+# -------------------------------------------------------------------------
+
+bind_rows(
+
+  # pref-level qAICs were aggregated with weight (pref-level sum of total deaths)
+  first_recentering_list %>%
+    select(prefname, qAIC_temp, qAIC_WBGT) %>%
+    mutate(weight_total_all = map_dbl(1:47,function(x){
+      first_recentering_list$data[[x]]$all %>% sum
+    })) %>%
+    mutate(weight_sum = sum(weight_total_all)) %>%
+    mutate(weight_frac = weight_total_all / weight_sum) %>%
+    mutate(qAIC_temp_weight = qAIC_temp * weight_frac,
+           qAIC_WBGT_weight = qAIC_WBGT * weight_frac) %>%
+    summarize(qAIC_temp = sum(qAIC_temp_weight),
+              qAIC_WBGT = sum(qAIC_WBGT_weight)) %>%
+    mutate(weight = "case_weight"),
+
+  # simple mean
+  first_recentering_list %>%
+    select(prefname, qAIC_temp, qAIC_WBGT) %>%
+    summarize(qAIC_temp = mean(qAIC_temp),
+              qAIC_WBGT = mean(qAIC_WBGT)) %>%
+    mutate(weight = "simple")
+) %>%
+
+  write.csv("R_code/qAIC/qAIC_first.csv",
+            row.names = F)
 
 # -------------------------------------------------------------------------
 # visualization
@@ -374,12 +417,11 @@ first_recentering_list
 
 # # visualization for re-centered first_pref47 ----------------------------
 # 
-# setwd("C:/Users/u030t/OneDrive/デスクトップ/research proposal/temp_WBGT")
 # pdf("figure/Others_first_recentered_pref47.pdf",width=8,height=4)
 # par(mfrow=c(1,2))
 # 
 # for(p in 1:47){
-#   
+# 
 #   first_recentering_list$crosspred_temp[[p]] %>%
 #     plot("overall",
 #          main=paste0(first_recentering_list$prefname[p],"\n(temperature)"),
@@ -390,7 +432,7 @@ first_recentering_list
 #   text(x=first_recentering_list$MMT[p],y=1.5,
 #        labels=paste0("MMT=",first_recentering_list$MMT[p],
 #                      "(",first_recentering_list$MMTP[p],"%)"))
-#   
+# 
 #   first_recentering_list$crosspred_WBGT[[p]] %>%
 #     plot("overall",
 #          main=paste0(first_recentering_list$prefname[p],"\n(WBGT)"),
@@ -401,7 +443,7 @@ first_recentering_list
 #   text(x=first_recentering_list$MMW[p],y=1.5,
 #        labels=paste0("MMT=",first_recentering_list$MMW[p],
 #                      "(",first_recentering_list$MMWP[p],"%)"))
-#   
+# 
 # }
 # 
 # dev.off()
@@ -468,17 +510,17 @@ first_recentering_RRlogRR <-
   })) %>% 
   
   # logRR -------------------------------------------------------------------
-  mutate(logRR_temp_90th = map2(data,crosspred_temp,~{
-    
-    tibble(
-      predvar =  .y$predvar %>% round(1),
-      logRR =    .y$allfit,
-      logRRvar = .y$allse ^ 2
-    ) %>% 
-      filter(predvar == quantile(.x$tmax,0.9) %>% round(1)) %>% 
-      return()
-    
-  })) %>% 
+mutate(logRR_temp_90th = map2(data,crosspred_temp,~{
+  
+  tibble(
+    predvar =  .y$predvar %>% round(1),
+    logRR =    .y$allfit,
+    logRRvar = .y$allse ^ 2
+  ) %>% 
+    filter(predvar == quantile(.x$tmax,0.9) %>% round(1)) %>% 
+    return()
+  
+})) %>% 
   mutate(logRR_temp_95th = map2(data,crosspred_temp,~{
     
     tibble(
@@ -604,7 +646,7 @@ RR_usingWBGT_first <-
       ) %>% 
       # percent change
       mutate(across(.cols=all_of(c("Estimate","L95","U95")),
-                    .fns=~{.x-1})),
+                    .fns=~{.x-1}*100)),
     
     # -------------------------------------------------------------------------
     # RR_95th
@@ -626,8 +668,9 @@ RR_usingWBGT_first <-
       ) %>% 
       # percent change
       mutate(across(.cols=all_of(c("Estimate","L95","U95")),
-                    .fns=~{.x-1}))
+                    .fns=~{.x-1}*100))
   )
+
 
 RR_usingWBGT_first
 
@@ -636,18 +679,18 @@ RR_usingWBGT_first
 
 ##############################################################################
 # 
-# AF with first curve (準備)
+# AF with first curve
 # 
 ##############################################################################
 
-# 準備！
+
 first_recentering_list_forAF <- 
   first_recentering_list %>% 
   
   ### bvar_temp ###
   mutate(bvar_temp = map(data,~{
     
-    # percentileごとに基底を得る
+    # basis by percentile
     predvar_temp <- quantile(.x$tmax,0:1000/1000,na.rm=T) %>% round(1)
     argvar_temp <- list(x = predvar_temp, 
                         fun = varfun,
@@ -661,7 +704,7 @@ first_recentering_list_forAF <-
   ### bvar_WBGT ###
   mutate(bvar_WBGT = map(data,~{
     
-    # percentileごとに基底を得る
+    # basis by percentile
     predvar_WBGT <- quantile(.x$maxWBGT,0:1000/1000,na.rm=T) %>% round(1)
     argvar_WBGT <- list(x = predvar_WBGT, 
                         fun = varfun,
@@ -695,14 +738,14 @@ first_pref_temp_AF_90th <-
   select(data,MMT,bvar_temp,first_temp_coef,first_temp_vcov) %>% 
   pmap(function(data,MMT,bvar_temp,first_temp_coef,first_temp_vcov){
     
-    # 変数追加 --------------------------------------------------------------------
+    # 
     p_data <- 
       data %>% 
       mutate(over_90th = data$tmax >= quantile(data$tmax,cutoff_per))
     
-    # basis作成 -----------------------------------------------------------------
-    # 過去作成crosspredはパーセントごとのbasisしか持ってない。
-    # そこで時系列データに対してのbasisを再度構築する必要がある。
+    # basis
+    # 驕主悉菴懈?芯rosspred縺ｯ繝代?ｼ繧ｻ繝ｳ繝医＃縺ｨ縺ｮbasis縺励°謖√▲縺ｦ縺ｪ縺?縲?
+    # 縺昴％縺ｧ譎らｳｻ蛻励ョ繝ｼ繧ｿ縺ｫ蟇ｾ縺励※縺ｮbasis繧貞?榊ｺｦ讒狗ｯ峨☆繧句ｿ?隕√′縺ゅｋ縲?
     p_argvar_temp <- 
       list(fun = varfun,
            intercept = FALSE,
@@ -717,23 +760,23 @@ first_pref_temp_AF_90th <-
       scale(p_bvar_temp, center = p_cen_temp, scale = F)
     
     
-    # 点推定 ---------------------------------------------------------------------
-    # BLUP結果のぱらめた取得
+    #
+    # BLUP邨先棡縺ｮ縺ｱ繧峨ａ縺溷叙蠕?
     p_coef = first_temp_coef
     p_vcov = first_temp_vcov
     
-    # daily AN vector(f-ANでもb-ANでもない注意)
+    # daily AN vector(f-AN縺ｧ繧Ｃ-AN縺ｧ繧ゅ↑縺?豕ｨ諢?)
     p_an_heatcold <- (1 - exp(-p_bvarcen_temp %*% p_coef)) * p_data$all
     
-    # MMT以上のみの AN
+    # MMT莉･荳翫?ｮ縺ｿ縺ｮ AN
     point_AN <- sum(p_an_heatcold[p_data$over_90th])
     death_denominator <- sum(p_data$all[p_data$over_90th])
     point_AF <- point_AN / death_denominator
     
     
-    # 区間推定 parametric bootstrap -----------------------------------------------
+    # 蛹ｺ髢捺耳螳? parametric bootstrap -----------------------------------------------
     
-    # 乱数発生
+    # 荵ｱ謨ｰ逋ｺ逕?
     set.seed(19941004)
     p_coefsim <- MASS::mvrnorm(nsim, p_coef, p_vcov)
     
@@ -761,14 +804,14 @@ first_pref_WBGT_AF_90th <-
   select(data,MMW,bvar_WBGT,first_WBGT_coef,first_WBGT_vcov) %>% 
   pmap(function(data,MMW,bvar_WBGT,first_WBGT_coef,first_WBGT_vcov){
     
-    # 変数追加 --------------------------------------------------------------------
+    # 螟画焚霑ｽ蜉? --------------------------------------------------------------------
     p_data <- 
       data %>% 
       mutate(over_90th = data$maxWBGT >= quantile(data$maxWBGT,cutoff_per))
     
-    # basis作成 -----------------------------------------------------------------
-    # 過去作成crosspredはパーセントごとのbasisしか持ってない。
-    # そこで時系列データに対してのbasisを再度構築する必要がある。
+    # basis菴懈?? -----------------------------------------------------------------
+    # 驕主悉菴懈?芯rosspred縺ｯ繝代?ｼ繧ｻ繝ｳ繝医＃縺ｨ縺ｮbasis縺励°謖√▲縺ｦ縺ｪ縺?縲?
+    # 縺昴％縺ｧ譎らｳｻ蛻励ョ繝ｼ繧ｿ縺ｫ蟇ｾ縺励※縺ｮbasis繧貞?榊ｺｦ讒狗ｯ峨☆繧句ｿ?隕√′縺ゅｋ縲?
     p_argvar_WBGT <- 
       list(fun = varfun,
            intercept = FALSE,
@@ -783,23 +826,23 @@ first_pref_WBGT_AF_90th <-
       scale(p_bvar_WBGT, center = p_cen_WBGT, scale = F)
     
     
-    # 点推定 ---------------------------------------------------------------------
-    # BLUP結果のぱらめた取得
+    # 轤ｹ謗ｨ螳? ---------------------------------------------------------------------
+    # BLUP邨先棡縺ｮ縺ｱ繧峨ａ縺溷叙蠕?
     p_coef = first_WBGT_coef
     p_vcov = first_WBGT_vcov
     
-    # daily AN vector(f-ANでもb-ANでもない注意)
+    # daily AN vector(f-AN縺ｧ繧Ｃ-AN縺ｧ繧ゅ↑縺?豕ｨ諢?)
     p_an_heatcold <- (1 - exp(-p_bvarcen_WBGT %*% p_coef)) * p_data$all
     
-    # MMT以上のみの AN
+    # MMT莉･荳翫?ｮ縺ｿ縺ｮ AN
     point_AN <- sum(p_an_heatcold[p_data$over_90th])
     death_denominator <- sum(p_data$all[p_data$over_90th])
     point_AF <- point_AN / death_denominator
     
     
-    # 区間推定 parametric bootstrap -----------------------------------------------
+    # 蛹ｺ髢捺耳螳? parametric bootstrap -----------------------------------------------
     
-    # 乱数発生
+    # 荵ｱ謨ｰ逋ｺ逕?
     set.seed(19941004)
     p_coefsim <- MASS::mvrnorm(nsim, p_coef, p_vcov)
     
@@ -828,7 +871,7 @@ first_pref_WBGT_AF_90th[[1]]
 # -------------------------------------------------------------------------
 # prefAnalysis ------------------------------------------------------------
 # -------------------------------------------------------------------------
-# empirical distributionの集計 -----------------------------------------------
+# empirical distribution縺ｮ髮?險? -----------------------------------------------
 first_table_temp_AF_90th <- 
   map_df(1:length(first_pref_temp_AF_90th),
          function(p){
@@ -922,7 +965,7 @@ AF_usingWBGT_first_90th <-
          I2 = first_mixmeta_90th %>% summary() %>% .$i2stat %>% round(2),
          I2_pre = first_mixmeta_pre_90th %>% summary() %>% .$i2stat %>% round(2))
 
-# 成果物
+# 謌先棡迚ｩ
 AF_usingWBGT_first_90th
 
 # save(AF_usingWBGT_first_90th,
@@ -946,14 +989,14 @@ first_pref_temp_AF_95th <-
   select(data,MMT,bvar_temp,first_temp_coef,first_temp_vcov) %>% 
   pmap(function(data,MMT,bvar_temp,first_temp_coef,first_temp_vcov){
     
-    # 変数追加 --------------------------------------------------------------------
+    # 螟画焚霑ｽ蜉? --------------------------------------------------------------------
     p_data <- 
       data %>% 
       mutate(over_95th = data$tmax >= quantile(data$tmax,cutoff_per))
     
-    # basis作成 -----------------------------------------------------------------
-    # 過去作成crosspredはパーセントごとのbasisしか持ってない。
-    # そこで時系列データに対してのbasisを再度構築する必要がある。
+    # basis菴懈?? -----------------------------------------------------------------
+    # 驕主悉菴懈?芯rosspred縺ｯ繝代?ｼ繧ｻ繝ｳ繝医＃縺ｨ縺ｮbasis縺励°謖√▲縺ｦ縺ｪ縺?縲?
+    # 縺昴％縺ｧ譎らｳｻ蛻励ョ繝ｼ繧ｿ縺ｫ蟇ｾ縺励※縺ｮbasis繧貞?榊ｺｦ讒狗ｯ峨☆繧句ｿ?隕√′縺ゅｋ縲?
     p_argvar_temp <- 
       list(fun = varfun,
            intercept = FALSE,
@@ -968,23 +1011,23 @@ first_pref_temp_AF_95th <-
       scale(p_bvar_temp, center = p_cen_temp, scale = F)
     
     
-    # 点推定 ---------------------------------------------------------------------
-    # BLUP結果のぱらめた取得
+    # 轤ｹ謗ｨ螳? ---------------------------------------------------------------------
+    # BLUP邨先棡縺ｮ縺ｱ繧峨ａ縺溷叙蠕?
     p_coef = first_temp_coef
     p_vcov = first_temp_vcov
     
-    # daily AN vector(f-ANでもb-ANでもない注意)
+    # daily AN vector(f-AN縺ｧ繧Ｃ-AN縺ｧ繧ゅ↑縺?豕ｨ諢?)
     p_an_heatcold <- (1 - exp(-p_bvarcen_temp %*% p_coef)) * p_data$all
     
-    # MMT以上のみの AN
+    # MMT莉･荳翫?ｮ縺ｿ縺ｮ AN
     point_AN <- sum(p_an_heatcold[p_data$over_95th])
     death_denominator <- sum(p_data$all[p_data$over_95th])
     point_AF <- point_AN / death_denominator
     
     
-    # 区間推定 parametric bootstrap -----------------------------------------------
+    # 蛹ｺ髢捺耳螳? parametric bootstrap -----------------------------------------------
     
-    # 乱数発生
+    # 荵ｱ謨ｰ逋ｺ逕?
     set.seed(19941004)
     p_coefsim <- MASS::mvrnorm(nsim, p_coef, p_vcov)
     
@@ -1012,14 +1055,14 @@ first_pref_WBGT_AF_95th <-
   select(data,MMW,bvar_WBGT,first_WBGT_coef,first_WBGT_vcov) %>% 
   pmap(function(data,MMW,bvar_WBGT,first_WBGT_coef,first_WBGT_vcov){
     
-    # 変数追加 --------------------------------------------------------------------
+    # 螟画焚霑ｽ蜉? --------------------------------------------------------------------
     p_data <- 
       data %>% 
       mutate(over_95th = data$maxWBGT >= quantile(data$maxWBGT,cutoff_per))
     
-    # basis作成 -----------------------------------------------------------------
-    # 過去作成crosspredはパーセントごとのbasisしか持ってない。
-    # そこで時系列データに対してのbasisを再度構築する必要がある。
+    # basis菴懈?? -----------------------------------------------------------------
+    # 驕主悉菴懈?芯rosspred縺ｯ繝代?ｼ繧ｻ繝ｳ繝医＃縺ｨ縺ｮbasis縺励°謖√▲縺ｦ縺ｪ縺?縲?
+    # 縺昴％縺ｧ譎らｳｻ蛻励ョ繝ｼ繧ｿ縺ｫ蟇ｾ縺励※縺ｮbasis繧貞?榊ｺｦ讒狗ｯ峨☆繧句ｿ?隕√′縺ゅｋ縲?
     p_argvar_WBGT <- 
       list(fun = varfun,
            intercept = FALSE,
@@ -1034,23 +1077,23 @@ first_pref_WBGT_AF_95th <-
       scale(p_bvar_WBGT, center = p_cen_WBGT, scale = F)
     
     
-    # 点推定 ---------------------------------------------------------------------
-    # BLUP結果のぱらめた取得
+    # 轤ｹ謗ｨ螳? ---------------------------------------------------------------------
+    # BLUP邨先棡縺ｮ縺ｱ繧峨ａ縺溷叙蠕?
     p_coef = first_WBGT_coef
     p_vcov = first_WBGT_vcov
     
-    # daily AN vector(f-ANでもb-ANでもない注意)
+    # daily AN vector(f-AN縺ｧ繧Ｃ-AN縺ｧ繧ゅ↑縺?豕ｨ諢?)
     p_an_heatcold <- (1 - exp(-p_bvarcen_WBGT %*% p_coef)) * p_data$all
     
-    # MMT以上のみの AN
+    # MMT莉･荳翫?ｮ縺ｿ縺ｮ AN
     point_AN <- sum(p_an_heatcold[p_data$over_95th])
     death_denominator <- sum(p_data$all[p_data$over_95th])
     point_AF <- point_AN / death_denominator
     
     
-    # 区間推定 parametric bootstrap -----------------------------------------------
+    # 蛹ｺ髢捺耳螳? parametric bootstrap -----------------------------------------------
     
-    # 乱数発生
+    # 荵ｱ謨ｰ逋ｺ逕?
     set.seed(19941004)
     p_coefsim <- MASS::mvrnorm(nsim, p_coef, p_vcov)
     
@@ -1079,7 +1122,7 @@ first_pref_WBGT_AF_95th[[1]]
 # -------------------------------------------------------------------------
 # prefWBGT ----------------------------------------------------------------
 # -------------------------------------------------------------------------
-# empirical distributionの集計 -----------------------------------------------
+# empirical distribution縺ｮ髮?險? -----------------------------------------------
 first_table_temp_AF_95th <- 
   map_df(1:length(first_pref_temp_AF_95th),
          function(p){
@@ -1173,9 +1216,8 @@ AF_usingWBGT_first_95th <-
          I2 = first_mixmeta_95th %>% summary() %>% .$i2stat %>% round(2),
          I2_pre = first_mixmeta_pre_95th %>% summary() %>% .$i2stat %>% round(2))
 
-# 成果物
+# 謌先棡迚ｩ
 AF_usingWBGT_first_95th
 
 # save(AF_usingWBGT_first_95th,
 #      file="R_code/usingWBGT_data/AF_usingWBGT_first_95th.R")
-
